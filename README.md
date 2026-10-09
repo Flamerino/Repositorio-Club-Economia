@@ -18,7 +18,7 @@ data/
       reservas/
       monetario/
       sistema_financiero/
-      tasas/
+      base_series/       # es_series.txt (diccionario) + tasa_ser.zip (valores)
     mecon/deuda_publica/
     opc/
   processed/             # series limpias listas para análisis
@@ -33,6 +33,8 @@ Los datos crudos están en `data/raw/`, organizados por institución y tema. El 
 ```bash
 pip install -r requirements.txt
 ```
+
+`tasa_ser.txt` pesa 169 MB (supera el límite de GitHub), por eso está comprimido como `data/raw/bcra/base_series/tasa_ser.zip`. Sus códigos de serie se buscan en `es_series.txt`.
 
 `src/descargar_datos.py` permite volver a bajar los archivos desde el Drive del Club (por ejemplo, para actualizar series).
 

@@ -16,8 +16,8 @@ infoMonetariaDia.xls,BCRA,Monetario,data/raw/bcra/monetario,14ae3vvyszyhO2H86THZ
 Series_estadisticas.xlsx,BCRA,Monetario,data/raw/bcra/monetario,1yFazQMZas6K854M357NAKOKVK_uCjsFz,1.5,Series estadísticas
 BalanceBCRA.xls,BCRA,Sistema financiero,data/raw/bcra/sistema_financiero,17H-NqtoEkCz3Lso9UdDwu3US5YcC-da-,0.8,Balance del BCRA
 Balance consolidado del sistema financiero.xls,BCRA,Sistema financiero,data/raw/bcra/sistema_financiero,1-Hf64TbsWn97Db-CmzF2RIj0bmIpRxyU,0.9,Balance consolidado del sistema financiero
-es_series.txt,BCRA,Sistema financiero,data/raw/bcra/sistema_financiero,1WUpj5NFIOA4R6xGieZdGwT31pGxNcV5a,5.8,
-tasa_ser.txt,BCRA,Tasas,data/raw/bcra/tasas,1K8UCG8cFVzxt7mSaP8s5w1ZFFC4YzykK,169.2,
+es_series.txt,BCRA,Base de series,data/raw/bcra/base_series,1WUpj5NFIOA4R6xGieZdGwT31pGxNcV5a,5.8,Diccionario de series del BCRA (código;título;descripción) - referencia para tasa_ser
+tasa_ser.txt,BCRA,Base de series,data/raw/bcra/base_series,1K8UCG8cFVzxt7mSaP8s5w1ZFFC4YzykK,169.2,"Valores diarios de series del BCRA (código;fecha;valor) desde 1990 - en el repo va comprimido como tasa_ser.zip"
 deuda_publica_30-06-2026_0.xlsx,MECON,Deuda pública,data/raw/mecon/deuda_publica,1nW29I_5_WWmg2oLi358emMCVVknBrTp5,1.6,Deuda pública al 30-06-2026
 Deuda pública mensual.xlsx,MECON,Deuda pública,data/raw/mecon/deuda_publica,14DRjgxXk6UFcBj6tI6ARQ93PoMU2i5co,0.8,Deuda pública mensual
 Monitor-Recaudación_tributaria_nacional-2026-09-Datos.xlsx,OPC,Fiscal,data/raw/opc,1TP6RSUXiHK2UzxXKk0F86IIwcsRfPF2S,0.4,Monitor de recaudación tributaria nacional (sep-2026)
