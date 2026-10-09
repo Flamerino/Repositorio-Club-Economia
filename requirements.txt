@@ -3,3 +3,5 @@ openpyxl
 xlrd
 gdown
 pyeph
+pyarrow
+requests

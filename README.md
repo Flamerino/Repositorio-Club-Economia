@@ -22,6 +22,7 @@ data/
     mecon/deuda_publica/
     opc/
   processed/             # series limpias listas para análisis
+    eph/                 # EPH unida por trimestres (parquet)
 notebooks/               # análisis exploratorios
 src/                     # scripts (descarga, limpieza, cálculos)
 ```
@@ -37,6 +38,24 @@ pip install -r requirements.txt
 `tasa_ser.txt` pesa 169 MB (supera el límite de GitHub), por eso está comprimido como `data/raw/bcra/base_series/tasa_ser.zip`. Sus códigos de serie se buscan en `es_series.txt`.
 
 `src/descargar_datos.py` permite volver a bajar los archivos desde el Drive del Club (por ejemplo, para actualizar series).
+
+## EPH (microdatos)
+
+`data/processed/eph/` tiene las bases de la EPH 2020 T1 – 2021 T4 unidas en un solo archivo por tipo:
+
+- `eph_individual_2020_2021.parquet`: 366.827 personas, 177 variables
+- `eph_hogar_2020_2021.parquet`: 121.131 hogares, 88 variables
+
+Cada fila conserva `ANO4` y `TRIMESTRE`, así que se puede filtrar o agrupar por período. Para sumar otros años:
+
+```bash
+python src/eph_unir.py --desde 2017 --hasta 2024
+```
+
+```python
+import pandas as pd
+ind = pd.read_parquet("data/processed/eph/eph_individual_2020_2021.parquet")
+```
 
 ## Fuentes
 
