@@ -1,0 +1,24 @@
+archivo,institucion,categoria,ruta_destino,drive_id,tamano_mb,descripcion
+sh_ipc_09_26.xls,INDEC,Precios,data/raw/indec/ipc,1uEQMwtzAayvIoZ0heMk6BU81qFYMHMOV,2.4,IPC - cuadros principales
+sh_ipc_desglose_categorias.xls,INDEC,Precios,data/raw/indec/ipc,1GF-IOneYoaD0xBQYs3NAkINayhVt9HOX,1.2,IPC - desglose por categorías
+sh_ipc_precios_promedio_por_producto.xls,INDEC,Precios,data/raw/indec/ipc,1gLsyt7QlXUJlk8YjekMtDV9TBXpI5eaK,0.2,IPC - precios promedio por producto
+sh_oferta_demanda_09_26.xls,INDEC,Actividad económica,data/raw/indec/actividad_economica,1ZT8mYuyL8rqsUmIkhl7B0ASOqe8M9XJ4,0.8,Oferta y demanda globales
+sh_ValorBrutoProduccion_ValorAgregadoBruto_09_26.xls,INDEC,Actividad económica,data/raw/indec/actividad_economica,1JOeuRrfy-IEbR-ytpScCErm_Ul-SX_8R,0.8,Valor bruto de producción y valor agregado bruto
+API_NY.GDP.MKTP.KD.ZG_DS2_es_excel_v2_8081.xls,Banco Mundial,Actividad económica,data/raw/banco_mundial,1meUx36cxfiXxFONFAwW0eNEUFTtZQydy,0.3,Crecimiento del PIB % anual (NY.GDP.MKTP.KD.ZG) - Excel
+API_NY.GDP.MKTP.KD.ZG_DS2_es_csv_v2_3011.zip,Banco Mundial,Actividad económica,data/raw/banco_mundial,13TAluUNZU9jxv1tRuYFYJ5v8JrRYqvD7,0.1,Crecimiento del PIB % anual (NY.GDP.MKTP.KD.ZG) - CSV
+ITCRMSerie.xlsx,BCRA,Tipo de cambio,data/raw/bcra/tipo_de_cambio,12Dc9Lhj5-1ZyDXtDOJH1886v0qViDY03,3.7,Índice de Tipo de Cambio Real Multilateral
+serie-completa-bandas-cambiarias.xlsx,BCRA,Tipo de cambio,data/raw/bcra/tipo_de_cambio,1ZBn_BWGj35Pzdr8AR4hOl8oWeHcB_iMV,0.0,Serie de bandas cambiarias
+anexo-estadistico-mercado-cambios-balance-cambiario.xlsx,BCRA,Mercado de cambios,data/raw/bcra/mercado_de_cambios,1smEQxm73q-xO5_ZBU5FbxpJxhx7Zimgz,18.4,Balance cambiario - anexo estadístico
+anexo-estadistico-sectorial-mercado-cambios-clanae.xlsx,BCRA,Mercado de cambios,data/raw/bcra/mercado_de_cambios,1EFfWs65qi6M1w_WJ2xx3Jau2WceZj6vC,37.0,Mercado de cambios por sector (CLAE) - anexo estadístico
+SerieReservas.xlsm,BCRA,Reservas,data/raw/bcra/reservas,1HPeKYgqhVGbVRFa4XhdBlJcvKumaBeTK,8.0,Serie de reservas internacionales
+ReservasPrincipalesYPasivos.txt,BCRA,Reservas,data/raw/bcra/reservas,1L5Sj2VUo1Vs8vUnn8IBObGSiGsrRI5r9,4.4,Reservas y principales pasivos
+infoMonetariaDia.xls,BCRA,Monetario,data/raw/bcra/monetario,14ae3vvyszyhO2H86THZ3iW61gpJc_ctR,5.0,Información monetaria diaria
+Series_estadisticas.xlsx,BCRA,Monetario,data/raw/bcra/monetario,1yFazQMZas6K854M357NAKOKVK_uCjsFz,1.5,Series estadísticas
+BalanceBCRA.xls,BCRA,Sistema financiero,data/raw/bcra/sistema_financiero,17H-NqtoEkCz3Lso9UdDwu3US5YcC-da-,0.8,Balance del BCRA
+Balance consolidado del sistema financiero.xls,BCRA,Sistema financiero,data/raw/bcra/sistema_financiero,1-Hf64TbsWn97Db-CmzF2RIj0bmIpRxyU,0.9,Balance consolidado del sistema financiero
+es_series.txt,BCRA,Sistema financiero,data/raw/bcra/sistema_financiero,1WUpj5NFIOA4R6xGieZdGwT31pGxNcV5a,5.8,
+tasa_ser.txt,BCRA,Tasas,data/raw/bcra/tasas,1K8UCG8cFVzxt7mSaP8s5w1ZFFC4YzykK,169.2,
+deuda_publica_30-06-2026_0.xlsx,MECON,Deuda pública,data/raw/mecon/deuda_publica,1nW29I_5_WWmg2oLi358emMCVVknBrTp5,1.6,Deuda pública al 30-06-2026
+Deuda pública mensual.xlsx,MECON,Deuda pública,data/raw/mecon/deuda_publica,14DRjgxXk6UFcBj6tI6ARQ93PoMU2i5co,0.8,Deuda pública mensual
+Monitor-Recaudación_tributaria_nacional-2026-09-Datos.xlsx,OPC,Fiscal,data/raw/opc,1TP6RSUXiHK2UzxXKk0F86IIwcsRfPF2S,0.4,Monitor de recaudación tributaria nacional (sep-2026)
+serie25.xls,OPC,Fiscal,data/raw/opc,1EJjC23h93W9xGn6ha6fFtzSTLMmkAE8D,0.0,
