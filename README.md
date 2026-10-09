@@ -7,7 +7,7 @@ Repositorio de series de tiempo de la economía argentina para el área de **pol
 ```
 data/
   catalogo_fuentes.csv   # qué archivo es, de dónde viene y dónde se guarda
-  raw/                   # datos crudos (no se suben a GitHub, se descargan)
+  raw/                   # datos crudos, tal como los publica cada fuente
     indec/
       ipc/
       actividad_economica/
@@ -28,13 +28,13 @@ src/                     # scripts (descarga, limpieza, cálculos)
 
 ## Cómo empezar
 
+Los datos crudos están en `data/raw/`, organizados por institución y tema. El catálogo (`data/catalogo_fuentes.csv`) indica de dónde sale cada archivo.
+
 ```bash
 pip install -r requirements.txt
-python src/descargar_datos.py              # baja todo (~260 MB)
-python src/descargar_datos.py --max-mb 50  # sin los archivos más pesados
 ```
 
-Los datos crudos no se versionan: algunos superan el límite de GitHub y además se actualizan seguido. El catálogo (`data/catalogo_fuentes.csv`) es la referencia de qué hay y de dónde sale cada archivo.
+`src/descargar_datos.py` permite volver a bajar los archivos desde el Drive del Club (por ejemplo, para actualizar series).
 
 ## Fuentes
 

@@ -1,7 +1,3 @@
-# Datos crudos: se bajan con src/descargar_datos.py, no se versionan
-data/raw/**
-!data/raw/.gitkeep
-
 # Python
 __pycache__/
 *.pyc
