@@ -23,6 +23,7 @@ data/
     opc/
   processed/             # series limpias listas para análisis
     eph/                 # EPH unida por trimestres (parquet)
+app/                     # página web (Streamlit)
 db/schema.sql            # tablas de la base (Supabase)
 notebooks/               # análisis exploratorios
 src/                     # scripts (descarga, limpieza, cálculos)
@@ -69,6 +70,25 @@ ITCRM y bandas no están en la API: se actualizan reemplazando el archivo en `da
 4. En GitHub, **Actions → Actualizar datos → Run workflow**, tildando *carga completa*. Carga toda la historia y después actualiza por API.
 
 Desde ahí corre solo todos los lunes. La clave service_role nunca va en el código ni en la página: la página usa la clave **anon**, que solo permite leer.
+
+## Página web (Streamlit)
+
+`app/app.py` es la página del Club: lee de Supabase con la clave pública (solo lectura).
+
+- **Resumen:** indicadores clave con su variación en 30 días y los últimos 2 años.
+- **Explorar series:** elegir series por categoría, período, frecuencia (original, promedio mensual, fin de mes) y transformación (nivel, variación mensual, interanual, base 100). Tabla y descarga en CSV.
+- **Sobre los datos:** catálogo completo.
+
+Correrla en la compu:
+
+```bash
+pip install -r app/requirements.txt
+streamlit run app/app.py
+# sin internet, con los CSV de data/processed/:
+DATOS_LOCALES=1 streamlit run app/app.py
+```
+
+Para sumar una serie al resumen, agregar su `id` a la lista `RESUMEN` al principio de `app/app.py`.
 
 ## EPH (microdatos)
 
