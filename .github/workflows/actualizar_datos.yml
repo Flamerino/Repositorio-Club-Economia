@@ -1,0 +1,36 @@
+name: Actualizar datos
+
+on:
+  schedule:
+    - cron: "0 12 * * 1"   # lunes 9:00 hora argentina
+  workflow_dispatch:
+    inputs:
+      carga_completa:
+        description: "Cargar toda la historia desde los archivos del repo (usar la primera vez)"
+        type: boolean
+        default: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Carga completa desde archivos
+        if: ${{ inputs.carga_completa }}
+        run: |
+          python src/bcra/limpiar.py
+          python src/cargar_supabase.py
+
+      - name: Actualizar BCRA por API
+        run: python src/bcra/actualizar_api.py
