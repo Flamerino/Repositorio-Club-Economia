@@ -2,7 +2,7 @@
 
 Lee las credenciales de variables de entorno:
     SUPABASE_URL          https://<proyecto>.supabase.co
-    SUPABASE_SERVICE_KEY  clave service_role (solo para escribir; nunca en el frontend)
+    SUPABASE_SERVICE_KEY  clave secreta (sb_secret_...) o service_role (solo para escribir; nunca en el frontend)
 """
 import json
 import math
@@ -18,7 +18,9 @@ def _config():
     url, key = os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_SERVICE_KEY")
     if not url or not key:
         raise SystemExit("Faltan SUPABASE_URL y/o SUPABASE_SERVICE_KEY en el entorno.")
-    headers = {"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+    headers = {"apikey": key, "Content-Type": "application/json"}
+    if key.startswith("eyJ"):  # clave service_role "legacy" (JWT); las nuevas sb_secret_ van solo en apikey
+        headers["Authorization"] = f"Bearer {key}"
     return url.rstrip("/") + "/rest/v1", headers
 
 
