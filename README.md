@@ -23,8 +23,13 @@ data/
     opc/
   processed/             # series limpias listas para análisis
     eph/                 # EPH unida por trimestres (parquet)
+db/schema.sql            # tablas de la base (Supabase)
 notebooks/               # análisis exploratorios
 src/                     # scripts (descarga, limpieza, cálculos)
+  bcra/limpiar.py        # archivos BCRA -> formato de la base
+  bcra/actualizar_api.py # datos nuevos desde la API del BCRA
+  cargar_supabase.py     # sube data/processed/*/ a Supabase
+.github/workflows/       # actualización automática semanal
 ```
 
 ## Cómo empezar
@@ -38,6 +43,32 @@ pip install -r requirements.txt
 `tasa_ser.txt` pesa 169 MB (supera el límite de GitHub), por eso está comprimido como `data/raw/bcra/base_series/tasa_ser.zip`. Sus códigos de serie se buscan en `es_series.txt`.
 
 `src/descargar_datos.py` permite volver a bajar los archivos desde el Drive del Club (por ejemplo, para actualizar series).
+
+## Base de datos (Supabase)
+
+Todas las fuentes se llevan al mismo formato y se cargan en dos tablas:
+
+- `series`: una fila por serie (nombre, fuente, categoría, unidad, frecuencia, ID en la API del BCRA si tiene).
+- `observaciones`: `serie_id`, `fecha`, `valor`.
+
+Flujo: **archivo crudo o API → `src/<fuente>/limpiar.py` → `data/processed/<fuente>/` → `cargar_supabase.py` → Supabase → página**.
+
+### BCRA (171 series)
+
+- 154 series de `SerieReservas.xlsm` (reservas, base monetaria, depósitos, préstamos, tasas, instrumentos del BCRA), diarias desde 2003. Cada una tiene su `IdVariable` de la API del BCRA, así que se actualizan solas todas las semanas.
+- 15 series de tipo de cambio real (ITCRM y bilaterales), diarias desde 1997.
+- 2 series de bandas cambiarias (incluye las fechas futuras ya anunciadas).
+
+ITCRM y bandas no están en la API: se actualizan reemplazando el archivo en `data/raw/bcra/tipo_de_cambio/` y corriendo una carga completa.
+
+### Puesta en marcha (una sola vez)
+
+1. Crear un proyecto en [supabase.com](https://supabase.com) → **SQL Editor** → pegar `db/schema.sql` → **Run**.
+2. En Supabase, **Project Settings → API**: copiar la **Project URL** y la clave **service_role**.
+3. En GitHub, **Settings → Secrets and variables → Actions → New repository secret**: crear `SUPABASE_URL` y `SUPABASE_SERVICE_KEY` con esos valores.
+4. En GitHub, **Actions → Actualizar datos → Run workflow**, tildando *carga completa*. Carga toda la historia y después actualiza por API.
+
+Desde ahí corre solo todos los lunes. La clave service_role nunca va en el código ni en la página: la página usa la clave **anon**, que solo permite leer.
 
 ## EPH (microdatos)
 

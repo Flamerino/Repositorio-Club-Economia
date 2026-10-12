@@ -8,3 +8,6 @@ venv/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Observaciones procesadas: se regeneran con src/<fuente>/limpiar.py
+data/processed/bcra/observaciones.csv
