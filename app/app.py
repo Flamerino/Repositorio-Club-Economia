@@ -68,7 +68,11 @@ except Exception as e:  # noqa: BLE001
     st.stop()
 
 st.title("📈 Datos económicos de Argentina")
-st.caption("Club de Economía UADE · Series oficiales actualizadas automáticamente todas las semanas")
+c_tit, c_btn = st.columns([5, 1])
+c_tit.caption("Club de Economía UADE · Series oficiales actualizadas automáticamente todas las semanas")
+if c_btn.button("🔄 Refrescar datos", help="Vuelve a leer la base (por defecto se guarda 6 horas)"):
+    st.cache_data.clear()
+    st.rerun()
 
 tab_resumen, tab_analisis, tab_explorar, tab_datos = st.tabs(["Resumen", "Análisis", "Explorar series", "Sobre los datos"])
 
