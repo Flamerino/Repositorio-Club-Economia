@@ -13,9 +13,13 @@ import datos  # noqa: E402
 
 st.set_page_config(page_title="Datos económicos · Club de Economía UADE", page_icon="📈", layout="wide")
 
-RESUMEN = [  # (serie, cómo mostrar el cambio)
-    ("bcra_api_74", "abs"), ("bcra_api_84", "pct"), ("bcra_api_71", "pct"),
-    ("bcra_api_197", "pct"), ("bcra_api_139", "pp"), ("bcra_itcrm", "pct"),
+RESUMEN = [  # (serie, título, cómo mostrar el cambio)
+    ("bcra_api_74", "Reservas internacionales", "abs"),
+    ("bcra_api_84", "Tipo de cambio oficial", "pct"),
+    ("bcra_api_71", "Base monetaria", "pct"),
+    ("bcra_api_197", "M2 transaccional privado", "pct"),
+    ("bcra_api_139", "Tasa BADLAR bancos privados (TNA)", "pp"),
+    ("bcra_itcrm", "Tipo de cambio real multilateral", "pct"),
 ]
 FRECUENCIAS = {"Original": None, "Promedio mensual": "mean", "Fin de mes": "last"}
 TRANSFORMACIONES = ["Nivel", "Variación % mensual", "Variación % interanual", "Base 100 (inicio del período)"]
@@ -28,6 +32,13 @@ def formato(v, unidad):
         return f"{v:,.2f}%".replace(",", "X").replace(".", ",").replace("X", ".")
     txt = f"{v:,.0f}" if abs(v) >= 1000 else f"{v:,.2f}"
     return txt.replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def escalar(v, unidad):
+    """Montos en millones de $ muy grandes se muestran en billones (10^12)."""
+    if unidad == "Millones de $" and abs(v) >= 1e6:
+        return v / 1e6, "Billones de $"
+    return v, unidad
 
 
 def a_mensual(s, como):
@@ -63,12 +74,12 @@ tab_resumen, tab_explorar, tab_datos = st.tabs(["Resumen", "Explorar series", "S
 # ---------------------------------------------------------------- resumen
 with tab_resumen:
     cols = st.columns(3)
-    for i, (sid, tipo_delta) in enumerate([r for r in RESUMEN if r[0] in meta.index]):
+    for i, (sid, titulo, tipo_delta) in enumerate([r for r in RESUMEN if r[0] in meta.index]):
         m = meta.loc[sid]
         s = datos.observaciones(sid)
         with cols[i % 3], st.container(border=True):
             if s.empty:
-                st.metric(m["nombre_corto"], "Sin datos")
+                st.metric(titulo, "Sin datos")
                 continue
             ult, fecha = s.iloc[-1], s.index[-1]
             previo = s[: fecha - pd.DateOffset(days=30)]
@@ -81,8 +92,10 @@ with tab_resumen:
                     delta = f"{ult - p:+.2f} p.p. en 30 días"
                 else:
                     delta = f"{'+' if ult >= p else ''}{formato(ult - p, m['unidad'])} en 30 días"
-            st.metric(m["nombre_corto"], formato(ult, m["unidad"]), delta)
-            st.caption(f"{m['unidad'] or ''} · al {fecha:%d/%m/%Y}")
+            valor, unidad = escalar(ult, m["unidad"])
+            st.metric(titulo, formato(valor, unidad) if unidad != "Billones de $" else f"{valor:,.1f}".replace(".", ","),
+                      delta, help=m["nombre"])
+            st.caption(f"{unidad or ''} · al {fecha:%d/%m/%Y}")
             ult2 = s[s.index >= fecha - pd.DateOffset(years=2)]
             fig = go.Figure(go.Scatter(x=ult2.index, y=ult2.values, mode="lines",
                                        line=dict(width=2), hovertemplate="%{x|%d/%m/%Y}: %{y:,.2f}<extra></extra>"))
