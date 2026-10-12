@@ -10,6 +10,7 @@ create table if not exists series (
     frecuencia      text,                      -- D, M, T, A
     id_api_bcra     integer,                   -- IdVariable en api.bcra.gob.ar (si tiene)
     archivo_origen  text,
+    descripcion     text,                      -- metodología / cómo se construye
     actualizado     timestamptz default now()
 );
 

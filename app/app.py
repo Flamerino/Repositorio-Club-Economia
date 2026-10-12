@@ -9,6 +9,7 @@ from plotly.subplots import make_subplots
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import analisis  # noqa: E402
 import datos  # noqa: E402
 
 st.set_page_config(page_title="Datos económicos · Club de Economía UADE", page_icon="📈", layout="wide")
@@ -69,7 +70,7 @@ except Exception as e:  # noqa: BLE001
 st.title("📈 Datos económicos de Argentina")
 st.caption("Club de Economía UADE · Series oficiales actualizadas automáticamente todas las semanas")
 
-tab_resumen, tab_explorar, tab_datos = st.tabs(["Resumen", "Explorar series", "Sobre los datos"])
+tab_resumen, tab_analisis, tab_explorar, tab_datos = st.tabs(["Resumen", "Análisis", "Explorar series", "Sobre los datos"])
 
 # ---------------------------------------------------------------- resumen
 with tab_resumen:
@@ -103,6 +104,10 @@ with tab_resumen:
                               xaxis=dict(visible=False), yaxis=dict(visible=False))
             st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key=f"spark_{sid}")
     st.caption("Últimos 2 años. Para ver la historia completa, comparar series o descargar datos, usá *Explorar series*.")
+
+# ---------------------------------------------------------------- análisis
+with tab_analisis:
+    analisis.render(meta)
 
 # ---------------------------------------------------------------- explorar
 with tab_explorar:
@@ -165,6 +170,8 @@ with tab_explorar:
                 rango = f"{s.index.min():%d/%m/%Y} – {s.index.max():%d/%m/%Y}" if not s.empty else "sin datos"
                 st.caption(f"`{sid}` · Fuente: {m['fuente']} · Unidad: {m['unidad'] or '—'} · "
                            f"Frecuencia: {m['frecuencia']} · Datos: {rango}{api}")
+                if isinstance(m.get("descripcion"), str) and m["descripcion"]:
+                    st.caption(m["descripcion"])
 
 # ---------------------------------------------------------------- sobre los datos
 with tab_datos:

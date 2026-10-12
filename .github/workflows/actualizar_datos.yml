@@ -30,7 +30,13 @@ jobs:
         if: ${{ inputs.carga_completa }}
         run: |
           python src/bcra/limpiar.py
-          python src/cargar_supabase.py
+          python src/indec/limpiar.py
+          python src/cargar_supabase.py bcra indec
 
       - name: Actualizar BCRA por API
         run: python src/bcra/actualizar_api.py
+
+      - name: Recalcular series de elaboración propia
+        run: |
+          python src/derivadas/calcular.py
+          python src/cargar_supabase.py derivadas

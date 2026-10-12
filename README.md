@@ -71,11 +71,29 @@ ITCRM y bandas no están en la API: se actualizan reemplazando el archivo en `da
 
 Desde ahí corre solo todos los lunes. La clave service_role nunca va en el código ni en la página: la página usa la clave **anon**, que solo permite leer.
 
+## Series de elaboración propia
+
+`src/derivadas/calcular.py` construye series cruzando las de la base (categoría *Elaboración propia*, ids con prefijo `club_`). Cada una tiene su metodología en la columna `descripcion`:
+
+| Serie | Qué responde |
+|---|---|
+| `club_respaldo_base`, `club_tc_convertibilidad` | ¿Alcanzan las reservas para respaldar la base monetaria? |
+| `club_tasa_real_badlar` | ¿Le gana el plazo fijo a la inflación? (tasa real ex post) |
+| `club_carry_usd` | ¿Cuánto rinde en dólares hacer plazo fijo en pesos? |
+| `club_itcrm_desvio` | ¿Está el peso apreciado o depreciado respecto de su promedio? |
+| `club_dolarizacion_depositos`, `club_prestamos_depositos` | Dolarización y profundidad del crédito |
+| `club_base_real`, `club_m2_real`, `club_prestamos_pesos_real` | Agregados monetarios y crédito en términos reales |
+
+Se recalculan solas cada lunes, después de la actualización por API. Para sumar una, agregarla en `calcular()` con su `descripcion`.
+
+**Pendiente:** el IPC se lee del archivo de INDEC, así que las series reales y la tasa real avanzan cuando se reemplaza `data/raw/indec/ipc/sh_ipc_*.xls` por la versión nueva y se corre una carga completa.
+
 ## Página web (Streamlit)
 
 `app/app.py` es la página del Club: lee de Supabase con la clave pública (solo lectura).
 
 - **Resumen:** indicadores clave con su variación en 30 días y los últimos 2 años.
+- **Análisis:** las series de elaboración propia, cada una con una pregunta, el gráfico y una lectura que se recalcula con el último dato.
 - **Explorar series:** elegir series por categoría, período, frecuencia (original, promedio mensual, fin de mes) y transformación (nivel, variación mensual, interanual, base 100). Tabla y descarga en CSV.
 - **Sobre los datos:** catálogo completo.
 
