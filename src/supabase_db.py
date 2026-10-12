@@ -21,7 +21,8 @@ def _config():
     headers = {"apikey": key, "Content-Type": "application/json"}
     if key.startswith("eyJ"):  # clave service_role "legacy" (JWT); las nuevas sb_secret_ van solo en apikey
         headers["Authorization"] = f"Bearer {key}"
-    return url.rstrip("/") + "/rest/v1", headers
+    url = url.strip().rstrip("/").removesuffix("/rest/v1")  # acepta la URL con o sin /rest/v1
+    return url + "/rest/v1", headers
 
 
 def _limpiar(registros):
