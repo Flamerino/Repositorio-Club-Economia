@@ -86,7 +86,18 @@ Desde ahí corre solo todos los lunes. La clave service_role nunca va en el cód
 
 Se recalculan solas cada lunes, después de la actualización por API. Para sumar una, agregarla en `calcular()` con su `descripcion`.
 
-**Pendiente:** el IPC se lee del archivo de INDEC, así que las series reales y la tasa real avanzan cuando se reemplaza `data/raw/indec/ipc/sh_ipc_*.xls` por la versión nueva y se corre una carga completa.
+## Actualización automática (todos los lunes)
+
+| Paso | Qué actualiza | Fuente |
+|---|---|---|
+| `src/bcra/actualizar_api.py` | 154 series del BCRA (reservas, base, depósitos, préstamos, tasas) | API Estadísticas Monetarias v4.0 |
+| `src/indec/actualizar_ipc.py` | IPC nivel general | API Series de Tiempo (datos.gob.ar), id `148.3_INIVELNAL_DICI_M_26` |
+| `src/bcra/actualizar_itcrm.py` | ITCRM y 14 tipos de cambio bilaterales | `ITCRMSerie.xlsx` del sitio del BCRA |
+| `src/derivadas/calcular.py` | Las 10 series de elaboración propia | Base de datos |
+
+IPC e ITCRM se **validan contra la historia ya cargada** antes de escribir: si no coinciden (otra serie, cambio de formato), no se carga nada y queda un aviso amarillo en el resumen de la corrida. `data/estado_actualizacion.json` registra la última fecha de cada fuente después de cada corrida.
+
+Siguen manuales: las 17 aperturas del IPC (divisiones, núcleo, regulados, etc.) y las bandas cambiarias. Se actualizan reemplazando el archivo en `data/raw/` y corriendo una carga completa.
 
 ## Página web (Streamlit)
 

@@ -57,3 +57,24 @@ def ultima_fecha(serie_id):
     r.raise_for_status()
     datos = r.json()
     return datos[0]["fecha"] if datos else None
+
+
+def leer_serie(serie_id):
+    """Devuelve [{'fecha','valor'}, ...] de una serie, paginando de a 1000."""
+    base, headers = _config()
+    filas, offset = [], 0
+    while True:
+        r = requests.get(f"{base}/observaciones", headers=headers, timeout=60, params={
+            "select": "fecha,valor", "serie_id": f"eq.{serie_id}", "order": "fecha.asc",
+            "limit": 1000, "offset": offset})
+        r.raise_for_status()
+        lote = r.json()
+        filas += lote
+        if len(lote) < 1000:
+            return filas
+        offset += 1000
+
+
+def aviso(msg):
+    """Muestra el mensaje como advertencia en el resumen de GitHub Actions."""
+    print(f"::warning::{msg}")

@@ -26,19 +26,8 @@ def serie(sid):
     global _local
     if os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_SERVICE_KEY"):
         sys.path.insert(0, str(RAIZ / "src"))
-        from supabase_db import _config
-        base, headers = _config()
-        filas, offset = [], 0
-        while True:
-            r = requests.get(f"{base}/observaciones", headers=headers, timeout=60, params={
-                "select": "fecha,valor", "serie_id": f"eq.{sid}", "order": "fecha.asc",
-                "limit": 1000, "offset": offset})
-            r.raise_for_status()
-            lote = r.json()
-            filas += lote
-            if len(lote) < 1000:
-                break
-            offset += 1000
+        from supabase_db import leer_serie
+        filas = leer_serie(sid)
         df = pd.DataFrame(filas)
     else:
         if _local is None:
