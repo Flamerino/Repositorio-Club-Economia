@@ -45,6 +45,11 @@ jobs:
       - name: Actualizar ITCRM (archivo del BCRA)
         run: python src/bcra/actualizar_itcrm.py
 
+      - name: Pobreza e indigencia (EPH y canastas)
+        run: |
+          python src/indec/pobreza.py
+          python src/cargar_supabase.py pobreza
+
       - name: Recalcular series de elaboración propia
         run: |
           python src/derivadas/calcular.py

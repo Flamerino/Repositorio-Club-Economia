@@ -99,11 +99,35 @@ IPC e ITCRM se **validan contra la historia ya cargada** antes de escribir: si n
 
 Siguen manuales: las 17 aperturas del IPC (divisiones, núcleo, regulados, etc.) y las bandas cambiarias. Se actualizan reemplazando el archivo en `data/raw/` y corriendo una carga completa.
 
+## Pobreza y precios relativos
+
+`src/indec/pobreza.py` mide pobreza e indigencia con la metodología oficial de INDEC (ingreso total familiar contra CBT/CBA por adulto equivalente y región, EPH 31 aglomerados, ponderador `PONDIH`) y calcula cuánto de esa pobreza se explica por cambios en el precio relativo de la canasta.
+
+**Validación contra INDEC (% de personas bajo la línea de pobreza):**
+
+| Semestre | Club | INDEC | | Semestre | Club | INDEC |
+|---|---|---|---|---|---|---|
+| 1° 2017 | 28,5 | 28,6 | | 1° 2022 | 36,3 | 36,5 |
+| 2° 2017 | 25,6 | 25,7 | | 2° 2022 | 39,4 | 39,2 |
+| 1° 2018 | 27,3 | 27,3 | | 1° 2023 | 40,0 | 40,1 |
+| 2° 2018 | 31,8 | 32,0 | | 2° 2023 | 41,9 | 41,7 |
+| 1° 2019 | 35,3 | 35,4 | | 1° 2024 | 52,9 | 52,9 |
+| 2° 2019 | 35,7 | 35,5 | | 2° 2024 | 38,1 | 38,1 |
+| 1° 2020 | 40,8 | 40,9 | | 1° 2025 | 31,6 | 31,6 |
+| 2° 2020 | 42,1 | 42,0 | | 2° 2025 | 28,4 | — |
+| 1° 2021 | 40,4 | 40,6 | | | | |
+| 2° 2021 | 37,3 | 37,3 | | | | |
+
+**Contrafactual:** misma medición con canastas que desde dic-2016 suben igual que el IPC nivel general. La diferencia con la pobreza medida es el efecto de que la canasta de los hogares pobres se encarezca más (o menos) que la inflación promedio. Mantiene fijos los ingresos.
+
+Datos: EPH, canastas y adulto equivalente del espejo de [pyeph](https://github.com/reflejar/pyeph-data); se guardan en `data/raw/indec/eph/` y `data/raw/indec/canastas/`. Se recalcula cada lunes: cuando el espejo publica un trimestre nuevo de la EPH, se suma solo.
+
 ## Página web (Streamlit)
 
 `app/app.py` es la página del Club: lee de Supabase con la clave pública (solo lectura).
 
 - **Resumen:** indicadores clave con su variación en 30 días y los últimos 2 años.
+- **Pobreza y precios:** canastas básicas y rubros del IPC en términos reales, pobreza e indigencia medidas y contrafactuales.
 - **Análisis:** las series de elaboración propia, cada una con una pregunta, el gráfico y una lectura que se recalcula con el último dato.
 - **Explorar series:** elegir series por categoría, período, frecuencia (original, promedio mensual, fin de mes) y transformación (nivel, variación mensual, interanual, base 100). Tabla y descarga en CSV.
 - **Sobre los datos:** catálogo completo.

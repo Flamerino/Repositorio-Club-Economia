@@ -10,6 +10,7 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import analisis  # noqa: E402
+import pobreza  # noqa: E402
 import datos  # noqa: E402
 
 st.set_page_config(page_title="Datos económicos · Club de Economía UADE", page_icon="📈", layout="wide")
@@ -74,7 +75,8 @@ if c_btn.button("🔄 Refrescar datos", help="Vuelve a leer la base (por defecto
     st.cache_data.clear()
     st.rerun()
 
-tab_resumen, tab_analisis, tab_explorar, tab_datos = st.tabs(["Resumen", "Análisis", "Explorar series", "Sobre los datos"])
+tab_resumen, tab_analisis, tab_pobreza, tab_explorar, tab_datos = st.tabs(
+    ["Resumen", "Análisis", "Pobreza y precios", "Explorar series", "Sobre los datos"])
 
 # ---------------------------------------------------------------- resumen
 with tab_resumen:
@@ -112,6 +114,10 @@ with tab_resumen:
 # ---------------------------------------------------------------- análisis
 with tab_analisis:
     analisis.render(meta)
+
+# ---------------------------------------------------------------- pobreza
+with tab_pobreza:
+    pobreza.render(meta)
 
 # ---------------------------------------------------------------- explorar
 with tab_explorar:
