@@ -1,5 +1,6 @@
 """Pestaña 'Pobreza y precios': precios relativos de la canasta de los hogares pobres
 y su efecto sobre la pobreza y la indigencia."""
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -103,3 +104,87 @@ def render(meta):
     st.caption("Limitaciones: el contrafactual mantiene fijos los ingresos (no modela cómo habrían cambiado salarios "
                "o jubilaciones con otros precios), usa el IPC nacional para todas las regiones y acumula desde "
                "dic-2016, así que el resultado depende de ese punto de partida. Cubre los 31 aglomerados de la EPH.")
+    render_vulnerabilidad_y_sesgo(meta)
+
+
+ESTRATOS_GRAF = [  # (id, etiqueta, color) de abajo hacia arriba
+    ("club_estrato_indigente", "Indigentes", "#82071e"),
+    ("club_estrato_pobre_no_indigente", "Pobres no indigentes", "#cf222e"),
+    ("club_estrato_1_11", "Hasta 10% arriba de la línea", "#fb8f44"),
+    ("club_estrato_11_125", "10% a 25% arriba", "#f6c343"),
+    ("club_estrato_125_15", "25% a 50% arriba", "#fae17d"),
+    ("club_estrato_15_2", "1,5 a 2 líneas", "#8ec5ff"),
+    ("club_estrato_2_mas", "Más de 2 líneas", "#1f6feb"),
+]
+
+
+def render_vulnerabilidad_y_sesgo(meta):
+    ids = [i for i, _, _ in ESTRATOS_GRAF] + ["club_vulnerables", "club_pobreza", "club_pobreza_alineada",
+                                               "club_sesgo_inflacion_pobreza", "club_inflacion_canasta_semestral",
+                                               "club_poblacion_eph"]
+    if any(i not in meta.index for i in ids):
+        return
+    s = {i: datos.observaciones(i) for i in ids}
+    st.divider()
+
+    # 3 ---------------------------------------------------------------- vulnerabilidad
+    st.subheader("¿Cuánta gente está apenas arriba de la línea?")
+    pob, vul, ult = s["club_pobreza"], s["club_vulnerables"], s["club_pobreza"].index[-1]
+    cerca10 = s["club_estrato_1_11"][ult]
+    personas_vul = vul[ult] / 100 * s["club_poblacion_eph"][ult]
+    c1, c2, c3 = st.columns(3)
+    c1.metric(f"Pobres · {sem(ult)}", f"{n(pob[ult])}%")
+    c2.metric("Vulnerables (hasta 50% arriba)", f"{n(vul[ult])}%")
+    c3.metric("Pobres o vulnerables", f"{n(pob[ult] + vul[ult])}%")
+    st.markdown(
+        f"Además del {n(pob[ult])}% de pobres, otro **{n(vul[ult])}%** de la población (unas {n(personas_vul / 1e6, 1)} "
+        f"millones de personas en los 31 aglomerados) tiene ingresos que superan la línea de pobreza por menos de 50%. "
+        f"Con ese margen, perder un ingreso o un mes de inflación alta alcanza para caer. En total, **{n(pob[ult] + vul[ult])}% "
+        f"de la población es pobre o vulnerable**. La franja vulnerable es muy estable (entre {n(vul.min())}% y "
+        f"{n(vul.max())}% desde 2017): cuando la pobreza sube, la franja vulnerable no se achica, sino que toda la "
+        f"distribución se corre hacia abajo. Dato de sensibilidad: el {n(cerca10)}% está a menos de 10% de la línea, así que si la canasta "
+        f"subiera 10% más que los ingresos, la pobreza pasaría a rondar el {n(pob[ult] + cerca10, 0)}%.")
+    fig = go.Figure([go.Bar(x=s[i].index, y=s[i].values, name=nombre, marker_color=color,
+                            hovertemplate=f"{nombre}: %{{y:.1f}}%<extra></extra>")
+                     for i, nombre, color in ESTRATOS_GRAF])
+    fig.update_layout(barmode="stack", height=380, margin=dict(l=0, r=0, t=10, b=0), hovermode="x unified",
+                      yaxis=dict(ticksuffix="%", range=[0, 100]), legend=dict(orientation="h", y=-0.12),
+                      xaxis=dict(tickformat="%Y"))
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
+    metodologia(meta, "club_vulnerables", "club_estrato_1_11")
+    st.divider()
+
+    # 4 ---------------------------------------------------------------- sesgo por inflación
+    st.subheader("¿Cuánto infla la inflación la medición de la pobreza?")
+    ali, ses, infl = s["club_pobreza_alineada"], s["club_sesgo_inflacion_pobreza"], s["club_inflacion_canasta_semestral"]
+    comun = ses.index.intersection(infl.index)
+    pendiente = np.polyfit(infl[comun], ses[comun], 1)[0]
+    pico = ses.idxmax()
+    texto = (f"La EPH pregunta los ingresos **del mes anterior**, y la medición los compara con la canasta del "
+             f"trimestre de la encuesta, que ya tiene precios más nuevos. Cuando la inflación es baja no importa; cuando se dispara, la canasta le gana al ingreso por "
+             f"una cuestión de fechas. Si alineamos ingreso y canasta al mismo mes, la pobreza del {sem(pico)} baja de "
+             f"{n(pob[pico])}% a **{n(ali[pico])}%**: una sobreestimación de **{n(ses[pico])} puntos**. "
+             f"Cada punto de inflación mensual suma alrededor de **{n(pendiente, 2)} puntos** de pobreza por este efecto.")
+    a, b = pd.Timestamp("2024-01-01"), pd.Timestamp("2024-07-01")
+    if a in pob.index and b in pob.index:
+        texto += (f" Por lo mismo, la baja de la pobreza en 2024 ({n(pob[a])}% → {n(pob[b])}%, "
+                  f"{n(pob[a] - pob[b])} puntos) fue en parte el sesgo desapareciendo: alineada, la baja es de "
+                  f"{n(ali[a] - ali[b])} puntos.")
+    st.markdown(texto)
+    g1, g2 = st.columns([3, 2])
+    with g1:
+        grafico([linea(pob, "Pobreza medida", ROJO, "%"),
+                 go.Scatter(x=ali.index, y=ali.values, mode="lines", name="Ingreso y canasta del mismo mes",
+                            line=dict(color=AZUL, dash="dash"), hovertemplate="%{y:,.1f}%<extra></extra>")],
+                sufijo="%")
+    with g2:
+        fig = go.Figure(go.Scatter(x=infl[comun], y=ses[comun], mode="markers+text", text=[sem(f) for f in comun],
+                                   textposition="top center", textfont=dict(size=9), marker=dict(color=ROJO, size=8),
+                                   hovertemplate="Inflación %{x:.1f}% → sesgo %{y:.1f} p.p.<extra></extra>"))
+        xs = np.linspace(0, infl[comun].max(), 20)
+        fig.add_trace(go.Scatter(x=xs, y=np.polyval(np.polyfit(infl[comun], ses[comun], 1), xs), mode="lines",
+                                 line=dict(color=GRIS, dash="dot"), hoverinfo="skip"))
+        fig.update_layout(height=340, margin=dict(l=0, r=0, t=10, b=0), showlegend=False,
+                          xaxis_title="Inflación mensual de la canasta (%)", yaxis_title="Sobreestimación (p.p.)")
+        st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
+    metodologia(meta, "club_pobreza_alineada", "club_sesgo_inflacion_pobreza")

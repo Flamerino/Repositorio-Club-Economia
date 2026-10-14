@@ -34,6 +34,15 @@ NOMBRE_REGION = {"gran_buenos_aires": "GBA", "noroeste": "Noroeste", "noreste": 
 COLUMNAS = ["CODUSU", "ANO4", "TRIMESTRE", "NRO_HOGAR", "COMPONENTE", "REGION", "AGLOMERADO",
             "CH03", "CH04", "CH06", "ITF", "DECIFR", "PONDIH", "PONDERA"]
 FUENTE_PROPIA = "Club de Economía UADE (elaboración propia)"
+ESTRATOS = {  # id: (nombre, descripción)
+    "indigente": ("Indigentes", "ingreso familiar menor a la Canasta Básica Alimentaria"),
+    "pobre_no_indigente": ("Pobres no indigentes", "ingreso entre la CBA y la CBT"),
+    "1_1.1": ("Vulnerables: hasta 10% arriba de la línea", "ingreso entre 1 y 1,1 veces la CBT"),
+    "1.1_1.25": ("Vulnerables: 10% a 25% arriba de la línea", "ingreso entre 1,1 y 1,25 veces la CBT"),
+    "1.25_1.5": ("Vulnerables: 25% a 50% arriba de la línea", "ingreso entre 1,25 y 1,5 veces la CBT"),
+    "1.5_2": ("Entre 1,5 y 2 líneas de pobreza", "ingreso entre 1,5 y 2 veces la CBT"),
+    "2_mas": ("Más de 2 líneas de pobreza", "ingreso de 2 veces la CBT o más"),
+}
 
 
 def bajar(ruta):
@@ -88,7 +97,8 @@ def calcular(base, ae, cba, cbt, ipc):
     factor = (ipc / ipc[BASE]).reindex(cba.index)
     contraf = lambda c: pd.DataFrame(np.outer(factor.values, c.loc[BASE].values),  # noqa: E731
                                      index=c.index, columns=c.columns)
-    lineas = {"cba": cba, "cbt": cbt, "cba_cf": contraf(cba), "cbt_cf": contraf(cbt)}
+    lineas = {"cba": cba, "cbt": cbt, "cba_cf": contraf(cba), "cbt_cf": contraf(cbt),
+              "cbt_rez": cbt.shift(1)}  # canasta del mes anterior, el mismo al que refieren los ingresos
 
     def trimestral(c, nombre):
         c = c[c.index >= BASE].copy()
@@ -108,7 +118,13 @@ def calcular(base, ae, cba, cbt, ipc):
     hog = hog[hog["semestre"].isin(completos[completos].index)]
     r = pd.DataFrame({k: tasas(hog, k) for k in lineas})
     poblacion = hog.groupby("semestre")["personas"].sum() / 2
-    return r, poblacion
+
+    ratio = hog["ITF"] / (hog["ae"] * hog["cbt"])
+    estrato = pd.cut(ratio, [-np.inf, 1, 1.1, 1.25, 1.5, 2, np.inf], right=False, labels=list(ESTRATOS)[1:]).astype(str)
+    estrato = estrato.where(hog["ITF"] >= hog["ae"] * hog["cba"], "indigente")
+    est = hog.assign(estrato=estrato).pivot_table(index="semestre", columns="estrato", values="personas", aggfunc="sum")
+    est = est.div(est.sum(axis=1), axis=0)[list(ESTRATOS)] * 100
+    return r, poblacion, est
 
 
 # ---------------------------------------------------------------- salida
@@ -116,7 +132,7 @@ def main():
     base, (cba, cbt) = eph(), canastas()
     ae = csv_de_zip(bajar("adulto_equivalente/adulto_equivalente.zip"))
     ipc = serie("indec_ipc_nivel_general")
-    r, poblacion = calcular(base, ae, cba, cbt, ipc)
+    r, poblacion, est = calcular(base, ae, cba, cbt, ipc)
 
     # guardar insumos en el repo (base compacta de la EPH y canastas)
     base.to_parquet(RAW / "eph" / "eph_pobreza_2017_en_adelante.parquet", index=False)
@@ -172,6 +188,31 @@ def main():
     agregar("club_efecto_canasta_indigencia", r["cba"] - r["cba_cf"],
             nombre="Efecto de la canasta sobre la indigencia (p.p.)", unidad="p.p.", **comunes,
             descripcion=ef.format(x="indigencia"))
+    for clave, (nombre, desc) in ESTRATOS.items():
+        agregar(f"club_estrato_{clave.replace('.', '')}", est[clave], nombre=f"{nombre} (% de personas)", unidad="%",
+                **comunes, descripcion=f"Personas en hogares con {desc} de su región por adulto equivalente. "
+                                       "EPH, 31 aglomerados, ponderador PONDIH. Los siete estratos suman 100%.")
+    agregar("club_vulnerables", est[["1_1.1", "1.1_1.25", "1.25_1.5"]].sum(axis=1),
+            nombre="Vulnerables: hasta 50% por encima de la línea de pobreza (% de personas)", unidad="%", **comunes,
+            descripcion="Personas no pobres cuyo ingreso familiar supera la CBT de su hogar en menos de 50%. Con ese "
+                        "margen, un golpe habitual (perder un ingreso, un mes de inflación alta) los deja bajo la línea.")
+    agregar("club_pobreza_alineada", r["cbt_rez"], nombre="Pobreza con ingresos y canasta del mismo mes (%)",
+            unidad="%", **comunes,
+            descripcion="Misma medición que la pobreza, pero comparando los ingresos (que la EPH releva para el mes "
+                        "anterior a la entrevista) con la canasta de ese mismo mes. Ejercicio de sensibilidad: supone que "
+                        "todos los ingresos declarados son del mes anterior; la base pública no trae el mes de entrevista, "
+                        "por eso se usan promedios trimestrales.")
+    agregar("club_sesgo_inflacion_pobreza", r["cbt"] - r["cbt_rez"],
+            nombre="Sobreestimación de la pobreza por desfase ingreso-canasta (p.p.)", unidad="p.p.", **comunes,
+            descripcion="Pobreza medida menos pobreza alineada. Crece con la inflación mensual: cuando la canasta sube "
+                        "rápido, el ingreso del mes anterior queda corto contra precios nuevos aunque el hogar no haya "
+                        "empeorado.")
+    infl = (cbt["gran_buenos_aires"].pct_change() * 100)
+    infl_sem = infl.groupby([infl.index.year, (infl.index.month > 6)]).mean()
+    infl_sem.index = [pd.Timestamp(f"{a}-{'07' if s2 else '01'}-01") for a, s2 in infl_sem.index]
+    agregar("club_inflacion_canasta_semestral", infl_sem[infl_sem.index.isin(r.index)],
+            nombre="Inflación mensual promedio de la CBT (GBA), por semestre", unidad="%", **comunes,
+            descripcion="Variación mensual promedio de la Canasta Básica Total de GBA en cada semestre. Fuente: INDEC.")
     agregar("club_poblacion_eph", poblacion, nombre="Población de los 31 aglomerados (EPH, ponderada)",
             unidad="Personas", **comunes, descripcion="Suma del ponderador PONDIH por semestre. Sirve para pasar puntos "
                                                        "porcentuales a cantidad de personas.")

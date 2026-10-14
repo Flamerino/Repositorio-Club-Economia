@@ -120,6 +120,10 @@ Siguen manuales: las 17 aperturas del IPC (divisiones, núcleo, regulados, etc.)
 
 **Contrafactual:** misma medición con canastas que desde dic-2016 suben igual que el IPC nivel general. La diferencia con la pobreza medida es el efecto de que la canasta de los hogares pobres se encarezca más (o menos) que la inflación promedio. Mantiene fijos los ingresos.
 
+**Vulnerabilidad:** reparte a la población en siete estratos según su ingreso familiar dividido su línea de pobreza (indigentes, pobres no indigentes, tres franjas de vulnerables hasta 1,5 líneas, 1,5–2 y más de 2). `club_vulnerables` = personas no pobres a menos de 50% de la línea.
+
+**Sesgo por inflación:** la EPH releva los ingresos del mes anterior. `club_pobreza_alineada` repite la medición con la canasta de ese mismo mes; la diferencia (`club_sesgo_inflacion_pobreza`) crece casi linealmente con la inflación mensual (≈0,5 p.p. de pobreza por cada punto de inflación). Es un ejercicio de sensibilidad: supone que todos los ingresos son del mes anterior y trabaja con promedios trimestrales porque la base pública no trae el mes de entrevista.
+
 Datos: EPH, canastas y adulto equivalente del espejo de [pyeph](https://github.com/reflejar/pyeph-data); se guardan en `data/raw/indec/eph/` y `data/raw/indec/canastas/`. Se recalcula cada lunes: cuando el espejo publica un trimestre nuevo de la EPH, se suma solo.
 
 ## Página web (Streamlit)
