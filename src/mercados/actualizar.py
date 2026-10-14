@@ -30,6 +30,7 @@ DOLARES = {  # casa en la API: (id, nombre)
     "contadoconliqui": ("mercados_dolar_ccl", "Dólar contado con liquidación, venta"),
 }
 TOLERANCIA = 0.01  # 1% de diferencia mediana con el BCRA en los últimos dos años
+BLUE_MINIMO = 50  # el blue viene en pesos enteros: desde $50 el redondeo pesa menos de 1%
 FUENTE = "ArgentinaDatos (no oficial)"
 
 
@@ -85,8 +86,24 @@ def main():
     else:
         aviso("Mercados: no se pudo descargar el riesgo país.")
 
+    # La fuente repite el último dato en fines de semana y feriados: se dejan solo los días con mercado
+    # (calendario del A3500 del BCRA; si no está disponible, lunes a viernes).
+    bcra = tc_bcra()
+    if bcra is not None:
+        habiles = bcra.index
+        # fuera del rango del calendario del BCRA (antes de 2003 o días nuevos) se usa lunes a viernes
+        filtro = lambda idx: idx.isin(habiles) | (idx > habiles.max()) | (idx < habiles.min())  # noqa: E731
+    else:
+        filtro = lambda idx: idx.dayofweek < 5  # noqa: E731
+    for sid in list(series):
+        ser = series[sid]
+        series[sid] = ser[filtro(ser.index) & (ser.index.dayofweek < 5)]
+    for archivo, (df, nombre, unidad) in list(crudos.items()):
+        f = pd.to_datetime(df["fecha"])
+        crudos[archivo] = (df[filtro(pd.DatetimeIndex(f)) & (f.dt.dayofweek < 5).values], nombre, unidad)
+
     # control contra el BCRA
-    may, bcra = series.get("mercados_dolar_mayorista"), tc_bcra()
+    may = series.get("mercados_dolar_mayorista")
     if may is None:
         aviso("Mercados: sin dólar mayorista no se puede validar la fuente. No se guarda nada.")
         return
@@ -113,13 +130,22 @@ def main():
 
     for casa, (sid, nombre) in DOLARES.items():
         if sid in series:
+            extra = (" La fuente publica el blue en pesos enteros: cuando valía entre $4 y $20 (2011-2019), un peso de "
+                     "redondeo era 5% a 25% del precio, por eso la serie queda igual durante meses y puede quedar por "
+                     "debajo del mayorista. Usar con cuidado antes de 2020.") if casa == "blue" else ""
             agregar(sid, series[sid], nombre, "$ por USD",
-                    f"{nombre}. Fuente: ArgentinaDatos (API no oficial que recopila cotizaciones públicas).")
+                    f"{nombre}. Fuente: ArgentinaDatos (API no oficial que recopila cotizaciones públicas). "
+                    f"Solo días hábiles (la fuente repite el último dato en fines de semana y feriados).{extra}")
     for sid, nombre in [("mercados_dolar_mep", "MEP"), ("mercados_dolar_ccl", "CCL"), ("mercados_dolar_blue", "blue")]:
         if sid in series:
             brecha = ((series[sid] / may - 1) * 100).dropna()
+            if nombre == "blue":  # antes de que el blue supere BLUE_MINIMO, el redondeo a pesos enteros distorsiona
+                desde = series[sid][series[sid] >= BLUE_MINIMO].index.min()
+                brecha = brecha[brecha.index >= desde]
+            nota_blue = (f" Empieza cuando el blue superó ${BLUE_MINIMO}: antes, el redondeo a pesos enteros de la fuente "
+                         "pesaba más de 1% y generaba brechas falsas.") if nombre == "blue" else ""
             agregar(f"mercados_brecha_{nombre.lower()}", brecha, f"Brecha cambiaria: dólar {nombre} vs mayorista",
-                    "%", f"Dólar {nombre} dividido el mayorista, menos 1, en %. Mismo día. Fuente: ArgentinaDatos.")
+                    "%", f"Dólar {nombre} dividido el mayorista, menos 1, en %. Mismo día. Fuente: ArgentinaDatos.{nota_blue}")
     if "mercados_riesgo_pais" in series:
         agregar("mercados_riesgo_pais", series["mercados_riesgo_pais"], "Riesgo país (EMBI Argentina)",
                 "Puntos básicos", "Diferencial de tasa de los bonos argentinos en dólares contra los del Tesoro de "
@@ -134,8 +160,10 @@ def main():
     for archivo, (df, nombre, unidad) in crudos.items():
         df = df.sort_values("fecha")
         df.to_csv(RAW / archivo, index=False)
-        indice.append({"archivo": archivo, "serie": nombre, "unidad": unidad, "frecuencia": "Diaria",
-                       "desde": df["fecha"].min(), "hasta": df["fecha"].max(), "fuente": FUENTE})
+        indice.append({"archivo": archivo, "serie": nombre, "unidad": unidad, "frecuencia": "Diaria (días hábiles)",
+                       "desde": df["fecha"].min(), "hasta": df["fecha"].max(), "fuente": FUENTE,
+                       "advertencia": "Valores en pesos enteros: antes de 2020 el redondeo pesa 5-25% del precio."
+                       if archivo == "dolar_blue.csv" else ""})
     brechas = pd.DataFrame({f"brecha_{n}": s for n, s in [
         (sid.removeprefix("mercados_brecha_"), ser) for sid, ser in
         [(m["id"], o.set_index("fecha")["valor"]) for m, o in zip(metas, obs)] if sid.startswith("mercados_brecha_")]})
@@ -144,7 +172,8 @@ def main():
         brechas.sort_index().round(2).to_csv(RAW / "brechas.csv")
         indice.append({"archivo": "brechas.csv", "serie": "Brechas MEP, CCL y blue contra el mayorista",
                        "unidad": "%", "frecuencia": "Diaria", "desde": brechas.index.min(),
-                       "hasta": brechas.index.max(), "fuente": "Cálculo propio con datos de ArgentinaDatos"})
+                       "hasta": brechas.index.max(), "fuente": "Cálculo propio con datos de ArgentinaDatos",
+                       "advertencia": f"La brecha blue empieza cuando el blue superó ${BLUE_MINIMO} (redondeo de la fuente)."})
     pd.DataFrame(indice).to_csv(RAW / "INDICE.csv", index=False)
 
 
