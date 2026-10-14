@@ -132,6 +132,25 @@ Siguen manuales: las 17 aperturas del IPC (divisiones, núcleo, regulados, etc.)
 
 Cada semestre hay que sumar una fila a `data/raw/indec/pobreza_oficial.csv` con la cifra oficial de INDEC. La página la muestra junto a la réplica del Club y avisa cuando INDEC ya publicó un semestre que la réplica todavía no tiene.
 
+## Series de datos.gob.ar (solo en el repo)
+
+`src/datos_gob/actualizar.py` trae series de la API de Series de Tiempo y las guarda en `data/processed/datos_gob/`. **No se suben a la base ni se muestran en la página**: `cargar_supabase.py` las excluye salvo que se pidan por nombre (`python src/cargar_supabase.py datos_gob`).
+
+| Área | Series |
+|---|---|
+| Actividad | EMAE original y desestacionalizado |
+| Salarios e ingresos | Índice de salarios (total, registrado, privado registrado, público, no registrado), RIPTE, salario mínimo |
+| Jubilaciones y transferencias | Haber mínimo jubilatorio, AUH |
+| Fiscal (IMIG, base caja) | Resultado primario y financiero, ingresos totales, gasto primario, intereses |
+
+Para sumar una serie, agregar una línea en `src/datos_gob/catalogo.py`. Controles de cada corrida:
+
+- **ID verificado:** los metadatos que devuelve la API tienen que contener las palabras clave de la serie; si no, busca por texto y solo acepta si hay un único candidato. Si hay varios, deja un aviso con la lista para fijar el ID a mano.
+- **Historia:** si una serie cambia mucho respecto de lo guardado (un ID que pasó a ser otra serie), no se pisa.
+- **Frescura:** avisa si el último dato es demasiado viejo (la API a veces se congela).
+- **Índice de salarios:** fuente principal el CSV del INDEC (`indice_salarios.csv`, URL fija); la API es respaldo porque llegó a estar meses sin actualizarse.
+- **Salario mínimo y haber mínimo:** recortados desde 1992 (antes están en australes y otras monedas). El salario mínimo incluye meses futuros ya fijados por decreto.
+
 ## Página web (Streamlit)
 
 `app/app.py` es la página del Club: lee de Supabase con la clave pública (solo lectura).

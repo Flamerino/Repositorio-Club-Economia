@@ -50,6 +50,9 @@ jobs:
           python src/indec/pobreza.py
           python src/cargar_supabase.py pobreza
 
+      - name: Series de datos.gob.ar (actividad, salarios, jubilaciones, fiscal; solo repo)
+        run: python src/datos_gob/actualizar.py
+
       - name: Recalcular series de elaboración propia
         run: |
           python src/derivadas/calcular.py
@@ -60,5 +63,5 @@ jobs:
           python src/estado.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/estado_actualizacion.json
+          git add data/estado_actualizacion.json data/processed/datos_gob/
           git diff --cached --quiet || (git commit -m "Actualización automática de datos" && git pull --rebase --autostash && git push)
