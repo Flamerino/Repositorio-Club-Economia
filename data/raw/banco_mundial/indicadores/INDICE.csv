@@ -1,0 +1,9 @@
+archivo,indicador,codigo_banco_mundial,unidad,frecuencia,desde,hasta,paises
+inflacion.csv,Inflación (precios al consumidor),FP.CPI.TOTL.ZG,% anual,Anual,1960,2025,"Argentina, Brasil, Chile, Uruguay, Paraguay, Bolivia, Perú, Colombia, México, América Latina y el Caribe, Mundo"
+deuda_gobierno.csv,Deuda del gobierno central,GC.DOD.TOTL.GD.ZS,% del PIB,Anual,1990,2024,"Brasil, Chile, Uruguay, Bolivia, Perú, Colombia, México, América Latina y el Caribe"
+exportaciones.csv,Exportaciones de bienes y servicios,NE.EXP.GNFS.ZS,% del PIB,Anual,1960,2025,"Argentina, Brasil, Chile, Uruguay, Paraguay, Bolivia, Perú, Colombia, México, América Latina y el Caribe, Mundo"
+inversion.csv,Formación bruta de capital (inversión),NE.GDI.TOTL.ZS,% del PIB,Anual,1960,2025,"Argentina, Brasil, Chile, Uruguay, Paraguay, Bolivia, Perú, Colombia, México, América Latina y el Caribe, Mundo"
+crecimiento_pib.csv,Crecimiento del PIB,NY.GDP.MKTP.KD.ZG,% anual,Anual,1961,2025,"Argentina, Brasil, Chile, Uruguay, Paraguay, Bolivia, Perú, Colombia, México, América Latina y el Caribe, Mundo"
+pib_pc_ppa.csv,"PIB per cápita (PPA, dólares internacionales constantes)",NY.GDP.PCAP.PP.KD,USD PPA constantes,Anual,1990,2025,"Argentina, Brasil, Chile, Uruguay, Paraguay, Bolivia, Perú, Colombia, México, América Latina y el Caribe, Mundo"
+gini.csv,Índice de Gini,SI.POV.GINI,Índice (0-100),Anual,1980,2024,"Argentina, Brasil, Chile, Uruguay, Paraguay, Bolivia, Perú, Colombia, México"
+desempleo.csv,Desempleo (estimación modelada OIT),SL.UEM.TOTL.ZS,% de la fuerza laboral,Anual,1991,2025,"Argentina, Brasil, Chile, Uruguay, Paraguay, Bolivia, Perú, Colombia, México, América Latina y el Caribe, Mundo"
