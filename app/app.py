@@ -8,10 +8,17 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
 
+import importlib
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import datos  # noqa: E402
 import analisis  # noqa: E402
 import pobreza  # noqa: E402
-import datos  # noqa: E402
+
+# Streamlit Cloud relee app.py en cada deploy pero deja en memoria la versión vieja de los otros módulos.
+# Recargarlos acá evita que una actualización del repo rompa la página hasta reiniciar la app.
+for _m in (datos, analisis, pobreza):
+    importlib.reload(_m)
 
 st.set_page_config(page_title="Datos económicos · Club de Economía UADE", page_icon="📈", layout="wide")
 

@@ -16,18 +16,33 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from supabase_db import ultima_fecha, upsert  # noqa: E402
+from supabase_db import aviso, ultima_fecha, upsert  # noqa: E402
 
 API = "https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/{id}"
 RAIZ = Path(__file__).resolve().parents[2]
 
 
+def pedir(id_api, params, intentos=4):
+    """GET a la API con reintentos: la API del BCRA corta conexiones y devuelve 429/5xx de vez en cuando."""
+    for i in range(intentos):
+        try:
+            r = requests.get(API.format(id=id_api), timeout=60, params=params)
+            if r.status_code == 404 or (r.ok and r.status_code < 300):
+                return r
+            if r.status_code not in (429, 500, 502, 503, 504):
+                r.raise_for_status()
+        except (requests.ConnectionError, requests.Timeout):
+            if i == intentos - 1:
+                raise
+        time.sleep(5 * (i + 1))
+    r.raise_for_status()
+    return r
+
+
 def traer(id_api, desde):
     filas, offset = [], 0
     while True:
-        r = requests.get(API.format(id=id_api), timeout=60,
-                         params={"desde": desde, "hasta": date.today().isoformat(),
-                                 "limit": 3000, "offset": offset})
+        r = pedir(id_api, {"desde": desde, "hasta": date.today().isoformat(), "limit": 3000, "offset": offset})
         if r.status_code == 404:
             return None
         r.raise_for_status()
@@ -68,7 +83,11 @@ def main():
         print(f"Sin datos en la API (series discontinuadas o ID cambiado): {', '.join(sin_api)}")
     if errores:
         print("Errores:\n  " + "\n  ".join(errores))
-        sys.exit(1)
+        # Unas pocas series con error no frenan el resto de la actualización (IPC, pobreza, etc.):
+        # quedan como aviso y se reintentan la semana próxima. Solo se corta si falla la mayoría.
+        if len(errores) > len(series) / 2:
+            sys.exit(1)
+        aviso(f"BCRA: {len(errores)} de {len(series)} series no se pudieron actualizar (ver log)")
 
 
 if __name__ == "__main__":
