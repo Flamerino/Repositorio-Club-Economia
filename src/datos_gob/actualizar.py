@@ -34,7 +34,17 @@ sesion = requests.Session()
 sesion.headers["User-Agent"] = "club-economia-uade/1.0"
 
 
+ACTUAL = {"sid": None}   # serie que se está procesando (para el reporte)
+NOTAS = {}               # sid -> lista de mensajes de esta corrida
+
+
+def nota(msg):
+    NOTAS.setdefault(ACTUAL["sid"], []).append(msg)
+    print(f"  {ACTUAL['sid']}: {msg}")
+
+
 def aviso(msg):
+    NOTAS.setdefault(ACTUAL["sid"], []).append(msg)
     print(f"::warning::{msg}")
 
 
@@ -82,7 +92,7 @@ def resolver(spec):
         if got and coincide(spec, got["texto"]) and got["freq"] in (None, spec["freq"]):
             return got
         motivo = "no existe" if not got else f"la API la describe como '{got['texto'][:90]}'"
-        print(f"  {spec['sid']}: el ID {spec['id']} {motivo}; busco por texto")
+        nota(f"el ID {spec['id']} {motivo}; busco por texto")
     if not spec.get("q"):
         return None
     candidatos = {}
@@ -93,7 +103,7 @@ def resolver(spec):
             candidatos[campo.get("id")] = texto
     if len(candidatos) == 1:
         id_api = next(iter(candidatos))
-        print(f"  {spec['sid']}: resuelta por texto -> {id_api} ({candidatos[id_api][:90]})")
+        nota(f"resuelta por texto -> {id_api} ({candidatos[id_api][:90]})")
         return serie_api(id_api)
     lista = "; ".join(f"{k}: {v[:60]}" for k, v in list(candidatos.items())[:6]) or "ninguno"
     aviso(f"{spec['sid']}: no se pudo identificar la serie en la API ({len(candidatos)} candidatos: {lista}). "
@@ -144,8 +154,9 @@ def main():
         aviso("datos.gob.ar no responde; se mantienen los datos anteriores.")
         return
     csv = salarios_csv()
-    metas, obs, ok = [], [], 0
+    metas, obs, ok, reporte = [], [], 0, []
     for spec in SERIES:
+        ACTUAL["sid"] = spec["sid"]
         origen = None
         if spec.get("csv") and not csv.get(spec["csv"], pd.Series(dtype=float)).empty:
             s, origen = csv[spec["csv"]], f"CSV INDEC ({CSV_SALARIOS}), columna {spec['csv']}"
@@ -157,12 +168,19 @@ def main():
             if spec["sid"] in previas:  # se conserva lo que había
                 s, origen = previas[spec["sid"]], "sin actualizar en esta corrida (se conserva el dato anterior)"
             else:
+                reporte.append({"serie": spec["sid"], "estado": "FALTA", "origen": "", "desde": "", "hasta": "",
+                                "notas": " | ".join(NOTAS.get(spec["sid"], ["sin datos"]))})
                 continue
         if spec.get("desde"):
             s = s[s.index >= pd.Timestamp(spec["desde"])]
         if s.empty:
             aviso(f"{spec['sid']}: la fuente no devolvió datos.")
+            reporte.append({"serie": spec["sid"], "estado": "FALTA", "origen": origen, "desde": "", "hasta": "",
+                            "notas": " | ".join(NOTAS.get(spec["sid"], []))})
             continue
+        if spec.get("desde") and s.index.min() > pd.Timestamp(spec["desde"]) + pd.DateOffset(years=2):
+            aviso(f"{spec['sid']}: la serie empieza en {s.index.min():%Y-%m}, se esperaba desde {spec['desde'][:7]}. "
+                  "La API puede estar devolviendo un tramo incompleto.")
         if spec["sid"] in previas and not origen.startswith("sin actualizar"):
             dif = historia_cambio(s, previas[spec["sid"]])
             if dif is not None:
@@ -182,8 +200,15 @@ def main():
                       "id_api_bcra": None, "archivo_origen": "src/datos_gob/actualizar.py", "descripcion": descripcion})
         obs.append(pd.DataFrame({"serie_id": spec["sid"], "fecha": s.index.strftime("%Y-%m-%d"), "valor": s.values}))
         ok += 1
+        estado = "OK" if not origen.startswith("sin actualizar") else "CONSERVADA"
+        if any("hace" in n and "días" in n for n in NOTAS.get(spec["sid"], [])):
+            estado += " (atrasada)"
+        reporte.append({"serie": spec["sid"], "estado": estado, "origen": origen, "desde": f"{s.index.min():%Y-%m}",
+                        "hasta": f"{ultimo:%Y-%m}", "notas": " | ".join(NOTAS.get(spec["sid"], []))})
         print(f"[ok] {spec['sid']}: {len(s)} datos, {s.index.min():%Y-%m} a {ultimo:%Y-%m} · {origen[:70]}")
 
+    RAW.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(reporte).to_csv(RAW / "ESTADO.csv", index=False)  # qué pasó con cada serie en esta corrida
     if not obs:
         aviso("datos.gob.ar: no se obtuvo ninguna serie; no se modifican los archivos.")
         return

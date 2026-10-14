@@ -147,6 +147,7 @@ Si una fuente no responde o no pasa el control, se conservan sus datos anteriore
 **Dónde está cada serie, lista para abrir en Excel:** cada fuente guarda un archivo por serie en `data/raw/`, con un `INDICE.csv` que dice qué es cada uno, unidad, período y fuente.
 
 - `data/raw/datos_gob/<tema>/<serie>.csv` (`fecha, valor`): `actividad/`, `salarios_e_ingresos/`, `jubilaciones_y_transferencias/`, `fiscal/`, `sector_externo/`, `mercado_de_trabajo/`, `precios/`.
+- `data/raw/datos_gob/ESTADO.csv`: qué pasó con cada serie en la última corrida (OK, CONSERVADA, FALTA o atrasada), con qué ID se obtuvo y, si falló, los candidatos que encontró la API. Es el primer lugar para mirar si una serie no se actualiza.
 - `data/raw/indec/salarios/indice_salarios.csv`: el archivo original del INDEC, tal cual se publica.
 - `data/raw/mercados/`: `dolar_oficial.csv`, `dolar_mayorista.csv`, `dolar_blue.csv`, `dolar_mep.csv`, `dolar_ccl.csv` (`fecha, compra, venta`), `riesgo_pais.csv` y `brechas.csv`.
 - `data/raw/banco_mundial/indicadores/<indicador>.csv`: años en filas, países en columnas.
