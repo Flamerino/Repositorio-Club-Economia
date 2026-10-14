@@ -97,7 +97,7 @@ Se dieron de baja `club_respaldo_base`, `club_tc_convertibilidad` (usaban reserv
 
 IPC e ITCRM se **validan contra la historia ya cargada** antes de escribir: si no coinciden (otra serie, cambio de formato), no se carga nada y queda un aviso amarillo en el resumen de la corrida. `data/estado_actualizacion.json` registra la última fecha de cada fuente después de cada corrida.
 
-Siguen manuales: las 17 aperturas del IPC (divisiones, núcleo, regulados, etc.) y las bandas cambiarias. Se actualizan reemplazando el archivo en `data/raw/` y corriendo una carga completa.
+Siguen manuales: las aperturas del IPC que se muestran en la página (las principales ya se actualizan solas en `data/processed/datos_gob/`) y las bandas cambiarias. Se actualizan reemplazando el archivo en `data/raw/` y corriendo una carga completa.
 
 ## Pobreza y precios relativos
 
@@ -132,22 +132,26 @@ Siguen manuales: las 17 aperturas del IPC (divisiones, núcleo, regulados, etc.)
 
 Cada semestre hay que sumar una fila a `data/raw/indec/pobreza_oficial.csv` con la cifra oficial de INDEC. La página la muestra junto a la réplica del Club y avisa cuando INDEC ya publicó un semestre que la réplica todavía no tiene.
 
-## Series de datos.gob.ar (solo en el repo)
+## Fuentes solo en el repo
 
-`src/datos_gob/actualizar.py` trae series de la API de Series de Tiempo y las guarda en `data/processed/datos_gob/`. **No se suben a la base ni se muestran en la página**: `cargar_supabase.py` las excluye salvo que se pidan por nombre (`python src/cargar_supabase.py datos_gob`).
+Se actualizan solas cada lunes (`src/actualizar_solo_repo.py`) y se commitean en `data/processed/`, pero **no se suben a la base ni se muestran en la página**: cada carpeta tiene un archivo `.solo_repo`. Para publicar una, borrar ese archivo (o subirla a mano con `python src/cargar_supabase.py <carpeta>`).
 
-| Área | Series |
-|---|---|
-| Actividad | EMAE original y desestacionalizado |
-| Salarios e ingresos | Índice de salarios (total, registrado, privado registrado, público, no registrado), RIPTE, salario mínimo |
-| Jubilaciones y transferencias | Haber mínimo jubilatorio, AUH |
-| Fiscal (IMIG, base caja) | Resultado primario y financiero, ingresos totales, gasto primario, intereses |
+| Carpeta | Fuente | Series | Control antes de guardar |
+|---|---|---|---|
+| `datos_gob/` | API Series de Tiempo (datos.gob.ar) | 30: EMAE, PIB trimestral, IPI, ISAC, índice de salarios (5), RIPTE, salario mínimo, haber mínimo, AUH, resultado primario y financiero, ingresos, gasto primario, intereses, exportaciones, importaciones, desocupación, informalidad, empleo registrado (SIPA), aperturas del IPC (núcleo, regulados, alimentos, vivienda), CBA y CBT | Metadatos de cada ID; historia contra lo guardado; frescura |
+| `mercados/` | ArgentinaDatos (no oficial) | Dólar oficial, mayorista, blue, MEP, CCL, brechas y riesgo país (diarios) | Mayorista vs A3500 del BCRA (diferencia mediana histórica 0,08%) |
+| `banco_mundial/` | API del Banco Mundial | 8 indicadores × 11 países (Argentina, región y mundo): crecimiento, inflación, PIB per cápita PPA, desempleo, Gini, inversión, exportaciones, deuda | Crecimiento de Argentina vs el archivo del Banco Mundial en `data/raw/` |
 
-Para sumar una serie, agregar una línea en `src/datos_gob/catalogo.py`. Controles de cada corrida:
+Si una fuente no responde o no pasa el control, se conservan sus datos anteriores y queda un aviso amarillo en la corrida.
+
+### Cómo sumar una fuente nueva
+
+1. **Una serie más de datos.gob.ar:** agregar una línea en `src/datos_gob/catalogo.py` (ID, palabras clave que deben aparecer en su descripción, frecuencia, días máximos sin datos). Nada más.
+2. **Una fuente distinta:** crear `src/<fuente>/actualizar.py` que escriba `data/processed/<fuente>/series.csv` y `observaciones.csv`, con algún control contra un dato conocido antes de guardar; crear `data/processed/<fuente>/.solo_repo`; y sumar el script a `FUENTES` en `src/actualizar_solo_repo.py`. El workflow no se toca.
+
+### Detalles de datos.gob.ar
 
 - **ID verificado:** los metadatos que devuelve la API tienen que contener las palabras clave de la serie; si no, busca por texto y solo acepta si hay un único candidato. Si hay varios, deja un aviso con la lista para fijar el ID a mano.
-- **Historia:** si una serie cambia mucho respecto de lo guardado (un ID que pasó a ser otra serie), no se pisa.
-- **Frescura:** avisa si el último dato es demasiado viejo (la API a veces se congela).
 - **Índice de salarios:** fuente principal el CSV del INDEC (`indice_salarios.csv`, URL fija); la API es respaldo porque llegó a estar meses sin actualizarse.
 - **Salario mínimo y haber mínimo:** recortados desde 1992 (antes están en australes y otras monedas). El salario mínimo incluye meses futuros ya fijados por decreto.
 

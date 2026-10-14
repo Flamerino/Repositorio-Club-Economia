@@ -12,16 +12,15 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 RAIZ = Path(__file__).resolve().parents[1]
-# Carpetas que están en el repo pero NO se suben a la base (y por lo tanto no aparecen en la página)
-# salvo que se pidan explícitamente por nombre: python src/cargar_supabase.py datos_gob
-SOLO_REPO = {"datos_gob"}
+# Las carpetas con un archivo .solo_repo están en el repo pero NO se suben a la base (y por lo tanto
+# no aparecen en la página), salvo que se pidan por nombre: python src/cargar_supabase.py datos_gob
 
 
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     dry = "--dry-run" in sys.argv
     carpetas = [RAIZ / "data" / "processed" / f for f in args] if args else \
-        [p.parent for p in (RAIZ / "data" / "processed").glob("*/series.csv") if p.parent.name not in SOLO_REPO]
+        [p.parent for p in (RAIZ / "data" / "processed").glob("*/series.csv") if not (p.parent / ".solo_repo").exists()]
 
     for carpeta in carpetas:
         series = pd.read_csv(carpeta / "series.csv")

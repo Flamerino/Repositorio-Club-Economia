@@ -48,10 +48,10 @@ def coincide(spec, texto):
     return ok and not any(norm(k) in t for k in spec.get("kw_not", []))
 
 
-def get(ruta, params):
-    for intento in range(4):
+def get(ruta, params, intentos=3):
+    for intento in range(intentos):
         try:
-            r = sesion.get(f"{API}/{ruta}", params=params, timeout=60)
+            r = sesion.get(f"{API}/{ruta}", params=params, timeout=30)
         except requests.RequestException:
             time.sleep(2 ** intento)
             continue
@@ -130,6 +130,10 @@ def main():
     if (SALIDA / "observaciones.csv").exists():
         o = pd.read_csv(SALIDA / "observaciones.csv", parse_dates=["fecha"])
         previas = {k: g.set_index("fecha")["valor"] for k, g in o.groupby("serie_id")}
+    # chequeo rápido: si la API no responde, no tiene sentido recorrer las 30 series
+    if get("series/", {"ids": "143.3_NO_PR_2004_A_21", "limit": 1, "format": "json"}, intentos=2) is None:
+        aviso("datos.gob.ar no responde; se mantienen los datos anteriores.")
+        return
     csv = salarios_csv()
     metas, obs, ok = [], [], 0
     for spec in SERIES:

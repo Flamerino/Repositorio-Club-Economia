@@ -17,7 +17,7 @@ PAGINA = 1000  # Supabase devuelve como máximo 1000 filas por consulta
 CACHE = 6 * 60 * 60
 RAIZ = Path(__file__).resolve().parents[1]
 LOCAL = os.environ.get("DATOS_LOCALES") == "1"  # desarrollo sin conexión: lee data/processed/
-SOLO_REPO = {"datos_gob"}  # carpetas que no se muestran en la página
+# las carpetas con un archivo .solo_repo no se muestran en la página
 
 
 def _config():
@@ -57,7 +57,7 @@ def nombre_corto(nombre):
 def series():
     if LOCAL:
         df = pd.concat(pd.read_csv(p) for p in (RAIZ / "data" / "processed").glob("*/series.csv")
-                       if p.parent.name not in SOLO_REPO)
+                       if not (p.parent / ".solo_repo").exists())
     else:
         df = pd.DataFrame(_consultar("series", {"select": "*", "order": "id"}))
     df["nombre_corto"] = df["nombre"].map(nombre_corto)
@@ -67,7 +67,7 @@ def series():
 @st.cache_data(show_spinner=False)
 def _observaciones_locales():
     return pd.concat(pd.read_csv(p) for p in (RAIZ / "data" / "processed").glob("*/observaciones.csv")
-                     if p.parent.name not in SOLO_REPO)
+                     if not (p.parent / ".solo_repo").exists())
 
 
 def _a_serie(df, serie_id):
