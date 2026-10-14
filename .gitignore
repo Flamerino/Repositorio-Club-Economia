@@ -11,3 +11,6 @@ Thumbs.db
 
 # Observaciones procesadas: se regeneran con src/<fuente>/limpiar.py
 data/processed/bcra/observaciones.csv
+
+# lista temporal de carpetas a commitear (la genera src/actualizar_solo_repo.py)
+.rutas_solo_repo

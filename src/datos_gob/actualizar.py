@@ -27,6 +27,7 @@ from catalogo import CSV_SALARIOS, SERIES  # noqa: E402
 API = "https://apis.datos.gob.ar/series/api"
 RAIZ = Path(__file__).resolve().parents[2]
 SALIDA = RAIZ / "data" / "processed" / "datos_gob"
+RAW = RAIZ / "data" / "raw" / "datos_gob"  # un CSV por serie, para abrir directo en Excel
 FREQ = {"R/P1M": "M", "R/P3M": "T", "R/P1Y": "A"}
 TOLERANCIA_HISTORIA = 0.05  # 5%: mediana de diferencia relativa admitida contra lo ya guardado
 sesion = requests.Session()
@@ -100,12 +101,20 @@ def resolver(spec):
     return None
 
 
+def slug(txt):
+    txt = norm(txt)
+    return re.sub(r"[^a-z0-9]+", "_", txt).strip("_")
+
+
 def salarios_csv():
     """Lee el CSV del INDEC; devuelve {columna: pd.Series} o {} si no está disponible."""
     try:
         r = sesion.get(CSV_SALARIOS, timeout=60)
         if not r.ok or b";" not in r.content[:500]:
             return {}
+        original = RAIZ / "data" / "raw" / "indec" / "salarios" / "indice_salarios.csv"
+        original.parent.mkdir(parents=True, exist_ok=True)
+        original.write_bytes(r.content)  # el archivo tal cual lo publica el INDEC
         df = pd.read_csv(io.StringIO(r.content.decode("utf-8-sig")), sep=";", decimal=",", na_values=["NA", ""])
         fechas = pd.to_datetime(df["periodo"], format="%d/%m/%Y", errors="coerce")
         return {c: pd.Series(pd.to_numeric(df[c], errors="coerce").values, index=fechas).dropna()
@@ -181,6 +190,18 @@ def main():
     SALIDA.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(metas).astype({"id_api_bcra": "Int64"}).to_csv(SALIDA / "series.csv", index=False)
     pd.concat(obs).to_csv(SALIDA / "observaciones.csv", index=False)
+
+    # data/raw/datos_gob/<categoría>/<serie>.csv (fecha, valor) + INDICE.csv
+    indice = []
+    for m, o in zip(metas, obs):
+        carpeta = RAW / slug(m["categoria"])
+        carpeta.mkdir(parents=True, exist_ok=True)
+        archivo = carpeta / f"{m['id']}.csv"
+        o[["fecha", "valor"]].to_csv(archivo, index=False)
+        indice.append({"archivo": str(archivo.relative_to(RAW)), "serie": m["nombre"], "unidad": m["unidad"],
+                       "frecuencia": m["frecuencia"], "desde": o["fecha"].min(), "hasta": o["fecha"].max(),
+                       "fuente": m["fuente"], "detalle": m["descripcion"]})
+    pd.DataFrame(indice).to_csv(RAW / "INDICE.csv", index=False)
     print(f"-> {ok} de {len(SERIES)} series guardadas en data/processed/datos_gob/")
 
 

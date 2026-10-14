@@ -144,10 +144,19 @@ Se actualizan solas cada lunes (`src/actualizar_solo_repo.py`) y se commitean en
 
 Si una fuente no responde o no pasa el control, se conservan sus datos anteriores y queda un aviso amarillo en la corrida.
 
+**Dónde está cada serie, lista para abrir en Excel:** cada fuente guarda un archivo por serie en `data/raw/`, con un `INDICE.csv` que dice qué es cada uno, unidad, período y fuente.
+
+- `data/raw/datos_gob/<tema>/<serie>.csv` (`fecha, valor`): `actividad/`, `salarios_e_ingresos/`, `jubilaciones_y_transferencias/`, `fiscal/`, `sector_externo/`, `mercado_de_trabajo/`, `precios/`.
+- `data/raw/indec/salarios/indice_salarios.csv`: el archivo original del INDEC, tal cual se publica.
+- `data/raw/mercados/`: `dolar_oficial.csv`, `dolar_mayorista.csv`, `dolar_blue.csv`, `dolar_mep.csv`, `dolar_ccl.csv` (`fecha, compra, venta`), `riesgo_pais.csv` y `brechas.csv`.
+- `data/raw/banco_mundial/indicadores/<indicador>.csv`: años en filas, países en columnas.
+
+`data/processed/<fuente>/` tiene lo mismo en formato largo (`serie_id, fecha, valor`), que es el que usa la base de datos.
+
 ### Cómo sumar una fuente nueva
 
 1. **Una serie más de datos.gob.ar:** agregar una línea en `src/datos_gob/catalogo.py` (ID, palabras clave que deben aparecer en su descripción, frecuencia, días máximos sin datos). Nada más.
-2. **Una fuente distinta:** crear `src/<fuente>/actualizar.py` que escriba `data/processed/<fuente>/series.csv` y `observaciones.csv`, con algún control contra un dato conocido antes de guardar; crear `data/processed/<fuente>/.solo_repo`; y sumar el script a `FUENTES` en `src/actualizar_solo_repo.py`. El workflow no se toca.
+2. **Una fuente distinta:** crear `src/<fuente>/actualizar.py` que escriba `data/processed/<fuente>/series.csv` y `observaciones.csv` **y un CSV por serie en `data/raw/<fuente>/` con su `INDICE.csv`**, con algún control contra un dato conocido antes de guardar; crear `data/processed/<fuente>/.solo_repo`; y sumar el script a `FUENTES` en `src/actualizar_solo_repo.py` junto con las carpetas que escribe. El workflow no se toca: commitea esas carpetas solo.
 
 ### Detalles de datos.gob.ar
 

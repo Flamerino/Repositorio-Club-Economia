@@ -17,6 +17,7 @@ import requests
 
 RAIZ = Path(__file__).resolve().parents[2]
 SALIDA = RAIZ / "data" / "processed" / "mercados"
+RAW = RAIZ / "data" / "raw" / "mercados"  # un CSV por cotización, para abrir directo en Excel
 FUENTES = [  # la API y, de respaldo, los mismos datos publicados en GitHub
     "https://api.argentinadatos.com/v1/{ruta}",
     "https://raw.githubusercontent.com/enzonotario/argentinadatos.com/main/datos/v1/{ruta}/index.json",
@@ -63,18 +64,22 @@ def tc_bcra():
 
 
 def main():
-    series = {}
+    series, crudos = {}, {}
     for casa, (sid, nombre) in DOLARES.items():
         datos = traer(f"cotizaciones/dolares/{casa}")
         if datos is None:
             aviso(f"Mercados: no se pudo descargar el dólar {casa}.")
             continue
         df = pd.DataFrame(datos)
+        archivo = {"bolsa": "dolar_mep.csv", "contadoconliqui": "dolar_ccl.csv"}.get(casa, f"dolar_{casa}.csv")
+        crudos[archivo] = (df[["fecha", "compra", "venta"]], f"{nombre.removesuffix(', venta')}: compra y venta",
+                                      "$ por USD")
         series[sid] = pd.Series(pd.to_numeric(df["venta"], errors="coerce").values,
                                 index=pd.to_datetime(df["fecha"])).dropna().groupby(level=0).last()
     riesgo = traer("finanzas/indices/riesgo-pais")
     if riesgo:
         df = pd.DataFrame(riesgo)
+        crudos["riesgo_pais.csv"] = (df[["fecha", "valor"]], "Riesgo país (EMBI Argentina)", "Puntos básicos")
         series["mercados_riesgo_pais"] = pd.Series(pd.to_numeric(df["valor"], errors="coerce").values,
                                                    index=pd.to_datetime(df["fecha"])).dropna().groupby(level=0).last()
     else:
@@ -123,6 +128,24 @@ def main():
     SALIDA.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(metas).astype({"id_api_bcra": "Int64"}).to_csv(SALIDA / "series.csv", index=False)
     pd.concat(obs).to_csv(SALIDA / "observaciones.csv", index=False)
+
+    RAW.mkdir(parents=True, exist_ok=True)
+    indice = []
+    for archivo, (df, nombre, unidad) in crudos.items():
+        df = df.sort_values("fecha")
+        df.to_csv(RAW / archivo, index=False)
+        indice.append({"archivo": archivo, "serie": nombre, "unidad": unidad, "frecuencia": "Diaria",
+                       "desde": df["fecha"].min(), "hasta": df["fecha"].max(), "fuente": FUENTE})
+    brechas = pd.DataFrame({f"brecha_{n}": s for n, s in [
+        (sid.removeprefix("mercados_brecha_"), ser) for sid, ser in
+        [(m["id"], o.set_index("fecha")["valor"]) for m, o in zip(metas, obs)] if sid.startswith("mercados_brecha_")]})
+    if not brechas.empty:
+        brechas.index.name = "fecha"
+        brechas.sort_index().round(2).to_csv(RAW / "brechas.csv")
+        indice.append({"archivo": "brechas.csv", "serie": "Brechas MEP, CCL y blue contra el mayorista",
+                       "unidad": "%", "frecuencia": "Diaria", "desde": brechas.index.min(),
+                       "hasta": brechas.index.max(), "fuente": "Cálculo propio con datos de ArgentinaDatos"})
+    pd.DataFrame(indice).to_csv(RAW / "INDICE.csv", index=False)
 
 
 if __name__ == "__main__":

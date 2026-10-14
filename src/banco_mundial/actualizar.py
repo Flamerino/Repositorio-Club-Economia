@@ -17,6 +17,7 @@ import requests
 
 RAIZ = Path(__file__).resolve().parents[2]
 SALIDA = RAIZ / "data" / "processed" / "banco_mundial"
+RAW = RAIZ / "data" / "raw" / "banco_mundial" / "indicadores"  # un CSV por indicador: años × países
 REFERENCIA = next((RAIZ / "data" / "raw" / "banco_mundial").glob("API_NY.GDP.MKTP.KD.ZG*.xls"), None)
 API = "https://api.worldbank.org/v2/country/{paises}/indicator/{indicador}"
 
@@ -109,6 +110,18 @@ def main():
     SALIDA.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(metas).astype({"id_api_bcra": "Int64"}).to_csv(SALIDA / "series.csv", index=False)
     pd.concat(obs).to_csv(SALIDA / "observaciones.csv", index=False)
+    RAW.mkdir(parents=True, exist_ok=True)
+    indice = []
+    for codigo, g in df[df.pais.isin(PAISES)].groupby("indicador"):
+        slug, nombre, unidad = INDICADORES[codigo]
+        tabla = g.pivot_table(index="anio", columns="pais", values="valor").reindex(columns=list(PAISES))
+        tabla = tabla.dropna(how="all", axis=1).rename(columns=PAISES)
+        tabla.index.name = "año"
+        tabla.to_csv(RAW / f"{slug}.csv")
+        indice.append({"archivo": f"{slug}.csv", "indicador": nombre, "codigo_banco_mundial": codigo,
+                       "unidad": unidad, "frecuencia": "Anual", "desde": int(tabla.index.min()),
+                       "hasta": int(tabla.index.max()), "paises": ", ".join(tabla.columns)})
+    pd.DataFrame(indice).to_csv(RAW / "INDICE.csv", index=False)
     print(f"-> {len(metas)} series ({len(INDICADORES)} indicadores × {len(PAISES)} países)")
 
 
