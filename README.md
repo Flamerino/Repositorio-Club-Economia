@@ -77,14 +77,14 @@ Desde ahí corre solo todos los lunes. La clave service_role nunca va en el cód
 
 | Serie | Qué responde |
 |---|---|
-| `club_respaldo_base`, `club_tc_convertibilidad` | ¿Alcanzan las reservas para respaldar la base monetaria? |
 | `club_tasa_real_badlar` | ¿Le gana el plazo fijo a la inflación? (tasa real ex post) |
-| `club_carry_usd` | ¿Cuánto rinde en dólares hacer plazo fijo en pesos? |
-| `club_itcrm_desvio` | ¿Está el peso apreciado o depreciado respecto de su promedio? |
+| `club_itcrm_desvio` | ¿Está el peso apreciado o depreciado respecto de su promedio histórico? (referencia, no equilibrio) |
 | `club_dolarizacion_depositos`, `club_prestamos_depositos` | Dolarización y profundidad del crédito |
 | `club_base_real`, `club_m2_real`, `club_prestamos_pesos_real` | Agregados monetarios y crédito en términos reales |
 
 Se recalculan solas cada lunes, después de la actualización por API. Para sumar una, agregarla en `calcular()` con su `descripcion`.
+
+Se dieron de baja `club_respaldo_base`, `club_tc_convertibilidad` (usaban reservas brutas, que sobreestiman el respaldo) y `club_carry_usd` (medido al dólar oficial, no era replicable con cepo). Están en la lista `RETIRADAS` de `calcular.py`, que las borra de la base en cada corrida.
 
 ## Actualización automática (todos los lunes)
 
@@ -93,7 +93,7 @@ Se recalculan solas cada lunes, después de la actualización por API. Para suma
 | `src/bcra/actualizar_api.py` | 154 series del BCRA (reservas, base, depósitos, préstamos, tasas) | API Estadísticas Monetarias v4.0 |
 | `src/indec/actualizar_ipc.py` | IPC nivel general | API Series de Tiempo (datos.gob.ar), id `148.3_INIVELNAL_DICI_M_26` |
 | `src/bcra/actualizar_itcrm.py` | ITCRM y 14 tipos de cambio bilaterales | `ITCRMSerie.xlsx` del sitio del BCRA |
-| `src/derivadas/calcular.py` | Las 10 series de elaboración propia | Base de datos |
+| `src/derivadas/calcular.py` | Las 7 series de elaboración propia | Base de datos |
 
 IPC e ITCRM se **validan contra la historia ya cargada** antes de escribir: si no coinciden (otra serie, cambio de formato), no se carga nada y queda un aviso amarillo en el resumen de la corrida. `data/estado_actualizacion.json` registra la última fecha de cada fuente después de cada corrida.
 
@@ -114,8 +114,8 @@ Siguen manuales: las 17 aperturas del IPC (divisiones, núcleo, regulados, etc.)
 | 1° 2019 | 35,3 | 35,4 | | 1° 2024 | 52,9 | 52,9 |
 | 2° 2019 | 35,7 | 35,5 | | 2° 2024 | 38,1 | 38,1 |
 | 1° 2020 | 40,8 | 40,9 | | 1° 2025 | 31,6 | 31,6 |
-| 2° 2020 | 42,1 | 42,0 | | 2° 2025 | 28,4 | — |
-| 1° 2021 | 40,4 | 40,6 | | | | |
+| 2° 2020 | 42,1 | 42,0 | | 2° 2025 | 28,4 | 28,2 |
+| 1° 2021 | 40,4 | 40,6 | | 1° 2026 | — | 32,3 |
 | 2° 2021 | 37,3 | 37,3 | | | | |
 
 **Contrafactual:** misma medición con canastas que desde dic-2016 suben igual que el IPC nivel general. La diferencia con la pobreza medida es el efecto de que la canasta de los hogares pobres se encarezca más (o menos) que la inflación promedio. Mantiene fijos los ingresos.
@@ -124,7 +124,13 @@ Siguen manuales: las 17 aperturas del IPC (divisiones, núcleo, regulados, etc.)
 
 **Sesgo por inflación:** la EPH releva los ingresos del mes anterior. `club_pobreza_alineada` repite la medición con la canasta de ese mismo mes; la diferencia (`club_sesgo_inflacion_pobreza`) crece casi linealmente con la inflación mensual (≈0,5 p.p. de pobreza por cada punto de inflación). Es un ejercicio de sensibilidad: supone que todos los ingresos son del mes anterior y trabaja con promedios trimestrales porque la base pública no trae el mes de entrevista.
 
-Datos: EPH, canastas y adulto equivalente del espejo de [pyeph](https://github.com/reflejar/pyeph-data); se guardan en `data/raw/indec/eph/` y `data/raw/indec/canastas/`. Se recalcula cada lunes: cuando el espejo publica un trimestre nuevo de la EPH, se suma solo.
+**Datos y actualización.** EPH, canastas por región y adulto equivalente salen del espejo de [pyeph](https://github.com/reflejar/pyeph-data) y se guardan en `data/raw/indec/eph/` y `data/raw/indec/canastas/`. Como el espejo se actualiza con retraso, `pobreza.py` completa:
+
+- **EPH:** los trimestres que el espejo no tiene se bajan directo de INDEC (`EPH_usu_<t>_Trim_<año>_txt.zip`).
+- **Canasta de GBA:** se extiende mes a mes con `serie_cba_cbt.xls` de INDEC y con `data/raw/indec/canastas/cba_cbt_gba.csv` (valores oficiales cargados a mano; respaldo por si cambia el formato del xls). Antes de usarla se valida contra los meses en común con el espejo.
+- **Canastas de las otras regiones:** INDEC las publica con el informe semestral. Mientras no estén, ese semestre no se calcula (no se estima nada).
+
+Cada semestre hay que sumar una fila a `data/raw/indec/pobreza_oficial.csv` con la cifra oficial de INDEC. La página la muestra junto a la réplica del Club y avisa cuando INDEC ya publicó un semestre que la réplica todavía no tiene.
 
 ## Página web (Streamlit)
 
@@ -135,6 +141,8 @@ Datos: EPH, canastas y adulto equivalente del espejo de [pyeph](https://github.c
 - **Análisis:** las series de elaboración propia, cada una con una pregunta, el gráfico y una lectura que se recalcula con el último dato.
 - **Explorar series:** elegir series por categoría, período, frecuencia (original, promedio mensual, fin de mes) y transformación (nivel, variación mensual, interanual, base 100). Tabla y descarga en CSV.
 - **Sobre los datos:** catálogo completo.
+
+Solo se ejecuta la sección elegida y las series de cada sección se bajan en paralelo, para que la primera carga no tarde.
 
 Correrla en la compu:
 

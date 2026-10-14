@@ -27,12 +27,14 @@ FRECUENCIAS = {"Original": None, "Promedio mensual": "mean", "Fin de mes": "last
 TRANSFORMACIONES = ["Nivel", "Variación % mensual", "Variación % interanual", "Base 100 (inicio del período)"]
 
 
-def formato(v, unidad):
+def formato(v, unidad, dec=None):
     if pd.isna(v):
         return "—"
     if unidad == "%":
         return f"{v:,.2f}%".replace(",", "X").replace(".", ",").replace("X", ".")
-    txt = f"{v:,.0f}" if abs(v) >= 1000 else f"{v:,.2f}"
+    if dec is None:
+        dec = 0 if abs(v) >= 1000 else 2
+    txt = f"{v:,.{dec}f}"
     return txt.replace(",", "X").replace(".", ",").replace("X", ".")
 
 
@@ -75,15 +77,19 @@ if c_btn.button("🔄 Refrescar datos", help="Vuelve a leer la base (por defecto
     st.cache_data.clear()
     st.rerun()
 
-tab_resumen, tab_analisis, tab_pobreza, tab_explorar, tab_datos = st.tabs(
-    ["Resumen", "Análisis", "Pobreza y precios", "Explorar series", "Sobre los datos"])
+# Solo se ejecuta la sección elegida (con st.tabs se cargaban todas en cada interacción).
+SECCIONES = ["Resumen", "Análisis", "Pobreza y precios", "Explorar series", "Sobre los datos"]
+seccion = st.segmented_control("Sección", SECCIONES, default="Resumen", key="seccion",
+                               label_visibility="collapsed") or "Resumen"
 
 # ---------------------------------------------------------------- resumen
-with tab_resumen:
+if seccion == "Resumen":
     cols = st.columns(3)
-    for i, (sid, titulo, tipo_delta) in enumerate([r for r in RESUMEN if r[0] in meta.index]):
+    visibles = [r for r in RESUMEN if r[0] in meta.index]
+    todas = datos.varias([r[0] for r in visibles])
+    for i, (sid, titulo, tipo_delta) in enumerate(visibles):
         m = meta.loc[sid]
-        s = datos.observaciones(sid)
+        s = todas[sid]
         with cols[i % 3], st.container(border=True):
             if s.empty:
                 st.metric(titulo, "Sin datos")
@@ -100,7 +106,7 @@ with tab_resumen:
                 else:
                     delta = f"{'+' if ult >= p else ''}{formato(ult - p, m['unidad'])} en 30 días"
             valor, unidad = escalar(ult, m["unidad"])
-            st.metric(titulo, formato(valor, unidad) if unidad != "Billones de $" else f"{valor:,.1f}".replace(".", ","),
+            st.metric(titulo, formato(valor, unidad, dec=1 if unidad == "Billones de $" else None),
                       delta, help=m["nombre"])
             st.caption(f"{unidad or ''} · al {fecha:%d/%m/%Y}")
             ult2 = s[s.index >= fecha - pd.DateOffset(years=2)]
@@ -112,15 +118,15 @@ with tab_resumen:
     st.caption("Últimos 2 años. Para ver la historia completa, comparar series o descargar datos, usá *Explorar series*.")
 
 # ---------------------------------------------------------------- análisis
-with tab_analisis:
+elif seccion == "Análisis":
     analisis.render(meta)
 
 # ---------------------------------------------------------------- pobreza
-with tab_pobreza:
+elif seccion == "Pobreza y precios":
     pobreza.render(meta)
 
 # ---------------------------------------------------------------- explorar
-with tab_explorar:
+elif seccion == "Explorar series":
     c1, c2 = st.columns([1, 2])
     with c1:
         categorias = sorted(meta["categoria"].dropna().unique())
@@ -141,8 +147,9 @@ with tab_explorar:
     else:
         d0, d1 = (desde_hasta + (date.today(),))[:2] if len(desde_hasta) else (date(2003, 1, 1), date.today())
         procesadas, freq_usada = {}, frecuencia
+        crudas = datos.varias(sel)
         for sid in sel:
-            s = datos.observaciones(sid)
+            s = crudas[sid]
             s = s[(s.index >= pd.Timestamp(d0)) & (s.index <= pd.Timestamp(d1))]
             procesadas[sid], freq_usada = transformar(s, frecuencia, transf)
         if freq_usada != frecuencia:
@@ -174,7 +181,7 @@ with tab_explorar:
 
         with st.expander("Ficha de las series"):
             for sid in sel:
-                m, s = meta.loc[sid], datos.observaciones(sid)
+                m, s = meta.loc[sid], crudas[sid]
                 st.markdown(f"**{m['nombre']}**")
                 api = f" · IdVariable API BCRA: {int(m['id_api_bcra'])}" if pd.notna(m.get("id_api_bcra")) else ""
                 rango = f"{s.index.min():%d/%m/%Y} – {s.index.max():%d/%m/%Y}" if not s.empty else "sin datos"
@@ -184,7 +191,7 @@ with tab_explorar:
                     st.caption(m["descripcion"])
 
 # ---------------------------------------------------------------- sobre los datos
-with tab_datos:
+else:  # Sobre los datos
     st.markdown(
         "Las series se descargan de fuentes oficiales, se limpian y se cargan en una base de datos que se "
         "actualiza automáticamente todos los lunes. El código está en "

@@ -23,7 +23,7 @@ def render(meta):
     if any(i not in meta.index for i in ids):
         st.info("Las series de pobreza todavía no están cargadas en la base.")
         return
-    s = {i: datos.observaciones(i) for i in ids}
+    s = datos.varias(ids + [i for i in ("indec_pobreza_oficial", "indec_indigencia_oficial") if i in meta.index])
 
     st.markdown("¿Subió más de lo normal lo que consumen los hogares de menores ingresos? ¿Cuánta pobreza "
                 "explica eso? Usamos las canastas básicas de INDEC, que son la canasta de referencia de esos "
@@ -54,8 +54,9 @@ def render(meta):
     gen = s["indec_ipc_nivel_general"]
     colores = [ROJO, AZUL, NARANJA, VIOLETA, VERDE, GRIS]
     rel = {}
-    for i, c in zip(elegidas, colores * 3):
-        rel[i] = (datos.observaciones(i) / gen * 100).dropna()
+    obs_rubros = datos.varias(elegidas)
+    for i in elegidas:
+        rel[i] = (obs_rubros[i] / gen * 100).dropna()
     if rel:
         grafico([linea(v, etiqueta(i), c) for (i, v), c in zip(rel.items(), colores * 3)], ref=100)
         ult = {etiqueta(i): v.iloc[-1] for i, v in rel.items()}
@@ -77,6 +78,13 @@ def render(meta):
     c1.metric(f"Pobreza · {sem(ult)}", f"{n(pob[ult])}%")
     c2.metric(f"Indigencia · {sem(ult)}", f"{n(ind[ult])}%")
     c3.metric("Efecto de la canasta en la pobreza", f"{'+' if ef_p[ult] > 0 else '−'}{n(abs(ef_p[ult]))} p.p.")
+    of_p, of_i = s.get("indec_pobreza_oficial"), s.get("indec_indigencia_oficial")
+    if of_p is not None and not of_p.empty and of_p.index[-1] > ult:
+        u = of_p.index[-1]
+        st.info(f"INDEC ya publicó el {sem(u)}: pobreza {n(of_p[u])}%"
+                + (f", indigencia {n(of_i[u])}%" if of_i is not None and u in of_i.index else "") +
+                ". La medición del Club (y el contrafactual) se suman cuando INDEC libera los microdatos de la EPH de "
+                "los dos trimestres del semestre y las canastas regionales.")
     st.markdown(
         f"Comparamos la pobreza medida con la que habría habido si la canasta hubiera subido igual que la "
         f"inflación general desde 2016, con los mismos ingresos. En el {sem(pico_ef)}, el encarecimiento relativo "
@@ -86,12 +94,16 @@ def render(meta):
         f"{'positivo' if ef_p[ult] > 0 else 'negativo'} ({'+' if ef_p[ult] > 0 else '−'}{n(abs(ef_p[ult]))} p.p.): la canasta " +
         f"{'sigue sumando' if ef_p[ult] > 0 else 'ya sube menos que la inflación y resta'} pobreza.")
     t1, t2 = st.tabs(["Pobreza", "Indigencia"])
-    for tab, real, cf, nombre in [(t1, pob, pob_cf, "Pobreza"), (t2, ind, ind_cf, "Indigencia")]:
+    for tab, real, cf, of, nombre in [(t1, pob, pob_cf, of_p, "Pobreza"), (t2, ind, ind_cf, of_i, "Indigencia")]:
         with tab:
-            grafico([linea(real, f"{nombre} medida", ROJO, "%"),
-                     go.Scatter(x=cf.index, y=cf.values, mode="lines", name="Si la canasta siguiera al IPC",
-                                line=dict(color=GRIS, dash="dash"), hovertemplate="%{y:,.1f}%<extra></extra>")],
-                    sufijo="%")
+            trazas = [linea(real, f"{nombre} medida (Club)", ROJO, "%"),
+                      go.Scatter(x=cf.index, y=cf.values, mode="lines", name="Si la canasta siguiera al IPC",
+                                 line=dict(color=GRIS, dash="dash"), hovertemplate="%{y:,.1f}%<extra></extra>")]
+            if of is not None and not of.empty:
+                trazas.append(go.Scatter(x=of.index, y=of.values, mode="markers", name="INDEC (oficial)",
+                                         marker=dict(color="#24292f", size=6, symbol="x"),
+                                         hovertemplate="%{y:,.1f}%<extra>INDEC</extra>"))
+            grafico(trazas, sufijo="%")
     st.markdown("**Efecto de la canasta, en puntos porcentuales**")
     fig = go.Figure([go.Bar(x=ef_p.index, y=ef_p.values, name="Pobreza", marker_color=ROJO,
                             hovertemplate="%{y:+.1f} p.p.<extra>Pobreza</extra>"),
@@ -124,7 +136,7 @@ def render_vulnerabilidad_y_sesgo(meta):
                                                "club_poblacion_eph"]
     if any(i not in meta.index for i in ids):
         return
-    s = {i: datos.observaciones(i) for i in ids}
+    s = datos.varias(ids)
     st.divider()
 
     # 3 ---------------------------------------------------------------- vulnerabilidad
@@ -155,21 +167,24 @@ def render_vulnerabilidad_y_sesgo(meta):
     st.divider()
 
     # 4 ---------------------------------------------------------------- sesgo por inflación
-    st.subheader("¿Cuánto infla la inflación la medición de la pobreza?")
+    st.subheader("¿Cuánto puede afectar la inflación a la medición de la pobreza?")
     ali, ses, infl = s["club_pobreza_alineada"], s["club_sesgo_inflacion_pobreza"], s["club_inflacion_canasta_semestral"]
     comun = ses.index.intersection(infl.index)
     pendiente = np.polyfit(infl[comun], ses[comun], 1)[0]
     pico = ses.idxmax()
-    texto = (f"La EPH pregunta los ingresos **del mes anterior**, y la medición los compara con la canasta del "
-             f"trimestre de la encuesta, que ya tiene precios más nuevos. Cuando la inflación es baja no importa; cuando se dispara, la canasta le gana al ingreso por "
-             f"una cuestión de fechas. Si alineamos ingreso y canasta al mismo mes, la pobreza del {sem(pico)} baja de "
-             f"{n(pob[pico])}% a **{n(ali[pico])}%**: una sobreestimación de **{n(ses[pico])} puntos**. "
-             f"Cada punto de inflación mensual suma alrededor de **{n(pendiente, 2)} puntos** de pobreza por este efecto.")
+    texto = (f"La EPH pregunta los ingresos **del mes anterior** a la entrevista, y la medición los compara con la "
+             f"canasta del trimestre de la encuesta. Con inflación baja la diferencia es mínima; con inflación alta, "
+             f"la canasta puede quedar por delante del ingreso por una cuestión de fechas. Es un **ejercicio de "
+             f"sensibilidad**, no una corrección de la cifra oficial: supone que todos los ingresos declarados son del "
+             f"mes anterior y trabaja con promedios trimestrales, porque la base pública no trae el mes de la "
+             f"entrevista. Con ese supuesto, alinear ingreso y canasta al mismo mes llevaría la pobreza del "
+             f"{sem(pico)} de {n(pob[pico])}% a {n(ali[pico])}% ({n(ses[pico])} puntos de diferencia), y en la "
+             f"serie cada punto de inflación mensual se asocia con unos {n(pendiente, 2)} puntos de diferencia.")
     a, b = pd.Timestamp("2024-01-01"), pd.Timestamp("2024-07-01")
     if a in pob.index and b in pob.index:
-        texto += (f" Por lo mismo, la baja de la pobreza en 2024 ({n(pob[a])}% → {n(pob[b])}%, "
-                  f"{n(pob[a] - pob[b])} puntos) fue en parte el sesgo desapareciendo: alineada, la baja es de "
-                  f"{n(ali[a] - ali[b])} puntos.")
+        texto += (f" Bajo el mismo supuesto, de la baja de {n(pob[a] - pob[b])} puntos entre el 1° y el 2° semestre "
+                  f"de 2024 ({n(pob[a])}% → {n(pob[b])}%), la serie alineada muestra {n(ali[a] - ali[b])}: la "
+                  "diferencia sería el efecto del desfase al bajar la inflación.")
     st.markdown(texto)
     g1, g2 = st.columns([3, 2])
     with g1:

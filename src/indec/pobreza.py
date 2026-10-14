@@ -1,7 +1,9 @@
 """Pobreza e indigencia (metodología INDEC) y efecto de los precios relativos de la canasta.
 
 1. Descarga la EPH individual (2017 en adelante), las canastas CBA/CBT por región y la tabla
-   de adulto equivalente desde el espejo de pyeph (github.com/reflejar/pyeph-data).
+   de adulto equivalente desde el espejo de pyeph (github.com/reflejar/pyeph-data). Los
+   trimestres de la EPH que el espejo todavía no tiene se bajan directo de INDEC, y la canasta
+   de GBA se completa con la serie mensual de INDEC (las regiones solo salen semestralmente).
 2. Calcula pobreza e indigencia de personas por semestre (31 aglomerados): un hogar es pobre
    si su ingreso total familiar (ITF) es menor que la CBT de su región por la cantidad de
    adultos equivalentes; indigente si es menor que la CBA. Ponderador: PONDIH.
@@ -25,6 +27,9 @@ sys.path.insert(0, str(RAIZ / "src"))
 from derivadas.calcular import serie  # noqa: E402  (lee de Supabase o de los CSV locales)
 
 ESPEJO = "https://raw.githubusercontent.com/reflejar/pyeph-data/master"
+INDEC_EPH = "https://www.indec.gob.ar/ftp/cuadros/menusuperior/eph/EPH_usu_{t}_Trim_{a}_txt.zip"
+INDEC_CANASTAS = "https://www.indec.gob.ar/ftp/cuadros/sociedad/serie_cba_cbt.xls"
+NAVEGADOR = {"User-Agent": "Mozilla/5.0 (club-economia-uade; datos abiertos)"}
 RAW = RAIZ / "data" / "raw" / "indec"
 SALIDA = RAIZ / "data" / "processed" / "pobreza"
 BASE = pd.Timestamp("2016-12-01")  # inicio del IPC nacional
@@ -56,19 +61,44 @@ def csv_de_zip(contenido, **kw):
 
 
 # ---------------------------------------------------------------- descarga
+def eph_indec(anio, trim):
+    """Base individual de un trimestre bajada de INDEC (para los que el espejo todavía no tiene)."""
+    try:
+        r = requests.get(INDEC_EPH.format(t=trim, a=anio), headers=NAVEGADOR, timeout=300)
+    except requests.RequestException:
+        return None
+    if not (r.ok and r.content[:2] == b"PK"):
+        return None
+    return leer_txt_indec(r.content)
+
+
+def leer_txt_indec(contenido):
+    z = zipfile.ZipFile(io.BytesIO(contenido))
+    nombres = [n for n in z.namelist() if n.lower().endswith(".txt") and "individual" in n.lower()]
+    if not nombres:
+        return None
+    return pd.read_csv(z.open(nombres[0]), sep=";", usecols=lambda x: x in COLUMNAS, low_memory=False)
+
+
+def normalizar(df):
+    for col in ["ITF", "PONDIH", "PONDERA", "CH04", "CH06", "REGION", "DECIFR", "ANO4", "TRIMESTRE"]:
+        if not pd.api.types.is_numeric_dtype(df[col]):
+            df[col] = pd.to_numeric(df[col].astype(str).str.replace(",", ".").str.strip(), errors="coerce")
+    return df[COLUMNAS]
+
+
 def eph():
     partes, anio, trim, faltas = [], 2017, 1, 0
     while faltas < 2:  # corta cuando no encuentra dos trimestres seguidos
         c = bajar(f"individual/base_individual_{anio}T{trim}.zip")
-        if c is None:
+        df = csv_de_zip(c, usecols=lambda x: x in COLUMNAS, low_memory=False) if c else eph_indec(anio, trim)
+        if df is None:
             faltas += 1
         else:
             faltas = 0
-            df = csv_de_zip(c, usecols=lambda x: x in COLUMNAS, low_memory=False)
-            for col in ["ITF", "PONDIH", "PONDERA", "CH04", "CH06", "REGION", "DECIFR", "ANO4", "TRIMESTRE"]:
-                if df[col].dtype == object:
-                    df[col] = pd.to_numeric(df[col].astype(str).str.replace(",", ".").str.strip(), errors="coerce")
-            partes.append(df[COLUMNAS])
+            if not c:
+                print(f"EPH {anio}T{trim}: bajada de INDEC (no está en el espejo)")
+            partes.append(normalizar(df))
         anio, trim = (anio + 1, 1) if trim == 4 else (anio, trim + 1)
     base = pd.concat(partes, ignore_index=True)
     print(f"EPH: {len(partes)} trimestres, hasta {base.ANO4.max()}T{base[base.ANO4 == base.ANO4.max()].TRIMESTRE.max()}")
@@ -76,15 +106,89 @@ def eph():
 
 
 def canastas():
+    """Canastas por región (espejo de pyeph) con GBA extendida hasta el último mes que publicó INDEC."""
     hoy = pd.Timestamp.today()
     for meses_atras in range(0, 36):  # busca la versión más reciente publicada en el espejo
         f = (hoy - pd.DateOffset(months=meses_atras)).strftime("%Y-%m")
         cba, cbt = bajar(f"canastas/cba_{f}.zip"), bajar(f"canastas/cbt_{f}.zip")
         if cba and cbt:
             leer = lambda c: csv_de_zip(c, parse_dates=["indice_tiempo"]).set_index("indice_tiempo")  # noqa: E731
-            print(f"Canastas: versión {f}")
-            return leer(cba), leer(cbt)
+            print(f"Canastas por región: versión {f}")
+            return extender_gba(leer(cba), leer(cbt))
     raise RuntimeError("No se encontraron las canastas en el espejo de pyeph")
+
+
+def gba_indec():
+    """Serie mensual CBA/CBT de GBA por adulto equivalente: archivo de INDEC + valores cargados a mano en el repo."""
+    partes = []
+    try:
+        r = requests.get(INDEC_CANASTAS, headers=NAVEGADOR, timeout=120)
+        if r.ok:
+            partes.append(leer_xls_canastas(r.content))
+    except Exception as e:  # noqa: BLE001  (formato nuevo, INDEC caído, etc.: seguimos con lo que hay)
+        print(f"No se pudo leer serie_cba_cbt.xls de INDEC: {e}")
+    manual = RAW / "canastas" / "cba_cbt_gba.csv"
+    if manual.exists():
+        partes.append(pd.read_csv(manual, parse_dates=["fecha"]).set_index("fecha")[["cba", "cbt"]])
+    if not partes:
+        return pd.DataFrame(columns=["cba", "cbt"])
+    gba = pd.concat(partes)
+    return gba[~gba.index.duplicated(keep="first")].sort_index()  # prioridad: el archivo de INDEC
+
+
+MESES = {m: i for i, m in enumerate(["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto",
+                                     "septiembre", "octubre", "noviembre", "diciembre"], 1)}
+
+
+def leer_xls_canastas(contenido):
+    """Busca en serie_cba_cbt.xls las filas  fecha | CBA | inversa de Engel | CBT  del adulto equivalente.
+
+    Acepta la fecha en una celda (2026-08-01) o separada en año y nombre del mes, como en los cuadros de INDEC.
+    """
+    hoja = pd.read_excel(io.BytesIO(contenido), header=None, sheet_name=0)
+    filas, anio = [], None
+    for _, fila in hoja.iterrows():
+        celdas = list(fila.values)
+        fecha, resto = None, celdas[1:]
+        if isinstance(celdas[0], (pd.Timestamp, np.datetime64)) or hasattr(celdas[0], "year"):
+            fecha = pd.Timestamp(celdas[0])
+        else:
+            a = pd.to_numeric(celdas[0], errors="coerce")
+            anio = int(a) if pd.notna(a) and 2000 < a < 2100 else anio
+            mes = MESES.get(str(celdas[1]).strip().lower().rstrip("*")) if len(celdas) > 1 else None
+            if anio and mes:
+                fecha, resto = pd.Timestamp(anio, mes, 1), celdas[2:]
+        nums = pd.to_numeric(pd.Series(resto), errors="coerce").dropna()
+        if fecha is not None and len(nums) >= 3:
+            filas.append((fecha.to_period("M").to_timestamp(), nums.iloc[0], nums.iloc[2]))
+    df = pd.DataFrame(filas, columns=["fecha", "cba", "cbt"]).set_index("fecha")
+    if df.empty or not (df["cbt"] > df["cba"]).all():
+        raise ValueError("estructura inesperada")
+    return df[~df.index.duplicated(keep="last")]
+
+
+def extender_gba(cba, cbt):
+    """Agrega a la columna de GBA los meses que INDEC ya publicó y el espejo todavía no.
+
+    Antes de usar la serie de INDEC la valida contra los meses en común: si no coincide, no la usa.
+    Las demás regiones quedan vacías en esos meses (INDEC las publica con el informe semestral).
+    """
+    gba = gba_indec()
+    comun = gba.index.intersection(cba.index)
+    if gba.empty or comun.empty:
+        return cba, cbt
+    desvio = max((gba.loc[comun, "cba"] / cba.loc[comun, "gran_buenos_aires"] - 1).abs().max(),
+                 (gba.loc[comun, "cbt"] / cbt.loc[comun, "gran_buenos_aires"] - 1).abs().max())
+    if desvio > 0.001:
+        print(f"::warning::La serie de canastas de GBA no coincide con la del espejo (desvío {desvio:.2%}); no se usa")
+        return cba, cbt
+    nuevos = gba.index.difference(cba.index)
+    if nuevos.empty:
+        return cba, cbt
+    cba = pd.concat([cba, gba.loc[nuevos, ["cba"]].rename(columns={"cba": "gran_buenos_aires"})]).sort_index()
+    cbt = pd.concat([cbt, gba.loc[nuevos, ["cbt"]].rename(columns={"cbt": "gran_buenos_aires"})]).sort_index()
+    print(f"Canasta GBA extendida con INDEC hasta {nuevos.max():%m/%Y}")
+    return cba.rename_axis("indice_tiempo"), cbt.rename_axis("indice_tiempo")
 
 
 # ---------------------------------------------------------------- cálculo
@@ -101,11 +205,13 @@ def calcular(base, ae, cba, cbt, ipc):
               "cbt_rez": cbt.shift(1)}  # canasta del mes anterior, el mismo al que refieren los ingresos
 
     def trimestral(c, nombre):
-        c = c[c.index >= BASE].copy()
+        # solo meses con las seis regiones; y solo trimestres con sus tres meses
+        c = c[c.index >= BASE].dropna().copy()
         c["ANO4"], c["TRIMESTRE"] = c.index.year, (c.index.month - 1) // 3 + 1
-        return (c.groupby(["ANO4", "TRIMESTRE"]).mean().stack().rename(nombre)
+        g = c.groupby(["ANO4", "TRIMESTRE"])
+        return (g.mean()[g.size() == 3].stack().rename(nombre)
                 .rename_axis(["ANO4", "TRIMESTRE", "region"]))
-    lin = pd.concat([trimestral(v, k) for k, v in lineas.items()], axis=1).reset_index()
+    lin = pd.concat([trimestral(v, k) for k, v in lineas.items()], axis=1).dropna().reset_index()
 
     e = base[base["PONDIH"] > 0].merge(ae, on=["CH04", "CH06"])
     e["region"] = e["REGION"].map(REGIONES)
@@ -153,7 +259,9 @@ def main():
             agregar(f"indec_{nombre}_{col}", c[col], nombre=f"{completo} por adulto equivalente, {NOMBRE_REGION[col]}",
                     fuente="INDEC", categoria="Canastas básicas", unidad="$", frecuencia="M",
                     descripcion=f"{completo} mensual por adulto equivalente, región {NOMBRE_REGION[col]}. "
-                                "Es la línea de " + ("indigencia." if nombre == "cba" else "pobreza."))
+                                "Es la línea de " + ("indigencia." if nombre == "cba" else "pobreza.") +
+                                (" GBA se actualiza todos los meses; el resto de las regiones, con cada informe "
+                                 "semestral de pobreza." if col == "gran_buenos_aires" else ""))
     ipc_m = ipc.reindex(cba.index)
     for nombre, c in [("cba", cba), ("cbt", cbt)]:
         real = (c["gran_buenos_aires"] / c.loc[BASE, "gran_buenos_aires"]) / (ipc_m / ipc[BASE]) * 100
@@ -165,10 +273,17 @@ def main():
                             "la canasta de los hogares de menores ingresos subió más que la inflación promedio. "
                             "Fuentes: INDEC (canastas e IPC).")
 
+    oficial = pd.read_csv(RAW / "pobreza_oficial.csv", parse_dates=["semestre"]).set_index("semestre")
+    for col, x in [("pobreza", "Pobreza"), ("indigencia", "Indigencia")]:
+        agregar(f"indec_{col}_oficial", oficial[col], nombre=f"{x} oficial INDEC (% de personas)", fuente="INDEC",
+                categoria="Pobreza", unidad="%", frecuencia="S",
+                descripcion=f"{x} publicada por INDEC en el informe semestral (31 aglomerados). Se carga a mano en "
+                            "data/raw/indec/pobreza_oficial.csv cuando sale cada informe.")
+
     comunes = dict(fuente=FUENTE_PROPIA, categoria="Elaboración propia", frecuencia="S")
     met = ("Personas en hogares con ingreso total familiar menor a la {l} de su región multiplicada por los adultos "
            "equivalentes del hogar. EPH, 31 aglomerados urbanos, ponderador PONDIH, canasta promedio del trimestre. "
-           "Replica la cifra oficial de INDEC con diferencias de hasta 0,2 puntos.")
+           "Replica la cifra oficial de INDEC con diferencias de hasta 0,2 puntos en pobreza y 0,4 en indigencia.")
     agregar("club_pobreza", r["cbt"], nombre="Pobreza (% de personas)", unidad="%", **comunes,
             descripcion=met.format(l="Canasta Básica Total (CBT)"))
     agregar("club_indigencia", r["cba"], nombre="Indigencia (% de personas)", unidad="%", **comunes,

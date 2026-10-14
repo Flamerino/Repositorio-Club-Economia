@@ -43,34 +43,18 @@ def metodologia(meta, *ids):
 
 
 def render(meta):
-    ids = ["club_respaldo_base", "club_tc_convertibilidad", "club_tasa_real_badlar", "club_carry_usd",
-           "club_itcrm_desvio", "club_dolarizacion_depositos", "club_base_real", "club_m2_real",
-           "club_prestamos_pesos_real", "bcra_api_84"]
+    ids = ["club_tasa_real_badlar", "club_itcrm_desvio", "club_dolarizacion_depositos", "club_base_real",
+           "club_m2_real", "club_prestamos_pesos_real"]
     faltan = [i for i in ids if i not in meta.index]
     if faltan:
         st.info("Las series de elaboración propia todavía no están cargadas en la base.")
         return
-    s = {i: datos.observaciones(i) for i in ids}
+    s = datos.varias(ids)
 
     st.markdown("Series construidas por el Club cruzando datos oficiales. Cada una responde una pregunta; "
                 "los números se recalculan solos con cada actualización.")
 
-    # 1 ---------------------------------------------------------------- respaldo
-    st.subheader("¿Alcanzan las reservas para respaldar los pesos?")
-    resp, conv, tc = s["club_respaldo_base"], s["club_tc_convertibilidad"], s["bcra_api_84"]
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Respaldo de la base", f"{n(resp.iloc[-1], 0)}%")
-    c2.metric("Tipo de cambio de convertibilidad", f"$ {n(conv.iloc[-1], 0)}")
-    c3.metric("Tipo de cambio oficial", f"$ {n(tc.iloc[-1], 0)}")
-    estado = "alcanzarían para cubrir" if resp.iloc[-1] >= 100 else "no alcanzarían para cubrir"
-    st.markdown(f"Al tipo de cambio oficial, las reservas brutas {estado} toda la base monetaria "
-                f"({n(resp.iloc[-1], 0)}%). El mínimo de la serie fue {n(resp.min(), 0)}% en "
-                f"{resp.idxmin():%m/%Y} y el máximo, {n(resp.max(), 0)}% en {resp.idxmax():%m/%Y}.")
-    grafico([linea(resp, "Respaldo", sufijo="%")], ref=100, sufijo="%")
-    metodologia(meta, "club_respaldo_base", "club_tc_convertibilidad")
-    st.divider()
-
-    # 2 ---------------------------------------------------------------- tasa real
+    # 1 ---------------------------------------------------------------- tasa real
     st.subheader("¿Le gana el plazo fijo a la inflación?")
     tr = s["club_tasa_real_badlar"]
     ult12 = tr.tail(12)
@@ -81,31 +65,20 @@ def render(meta):
     metodologia(meta, "club_tasa_real_badlar")
     st.divider()
 
-    # 3 ---------------------------------------------------------------- carry
-    st.subheader("¿Cuánto rindió en dólares hacer plazo fijo en pesos?")
-    carry = s["club_carry_usd"]
-    r12 = (carry / carry.shift(12) - 1).dropna() * 100
-    mejor, peor = r12.idxmax(), r12.idxmin()
-    st.markdown(f"Un plazo fijo renovado durante los 12 meses a {carry.index[-1]:%m/%Y} rindió "
-                f"**{n(r12.iloc[-1])}% en dólares oficiales**. El mejor año móvil de la serie terminó en "
-                f"{mejor:%m/%Y} ({n(r12[mejor], 0)}%) y el peor en {peor:%m/%Y} ({n(r12[peor], 0)}%).")
-    grafico([barras(r12, "Rendimiento en USD, 12 meses")], ref=0, sufijo="%")
-    metodologia(meta, "club_carry_usd")
-    st.divider()
-
-    # 4 ---------------------------------------------------------------- ITCRM
-    st.subheader("¿Está Argentina cara o barata en dólares?")
+    # 2 ---------------------------------------------------------------- ITCRM
+    st.subheader("¿Está el peso más apreciado o más depreciado que su promedio histórico?")
     it = s["club_itcrm_desvio"]
     lado = "más apreciado" if it.iloc[-1] < 0 else "más depreciado"
     pct_mas_caro = (it < it.iloc[-1]).mean() * 100
     st.markdown(f"El tipo de cambio real multilateral está **{n(abs(it.iloc[-1]))}% {lado}** que su promedio "
                 f"desde {it.index.min():%Y}. En el {n(pct_mas_caro, 0)}% de los días desde entonces el "
-                "peso estuvo más apreciado que hoy.")
+                "peso estuvo más apreciado que hoy. El promedio incluye la convertibilidad y la salida de 2002, "
+                "así que sirve como referencia histórica, no como tipo de cambio de equilibrio.")
     grafico([linea(it, "Desvío vs promedio", sufijo="%")], ref=0, sufijo="%")
     metodologia(meta, "club_itcrm_desvio")
     st.divider()
 
-    # 5 ---------------------------------------------------------------- dolarización
+    # 3 ---------------------------------------------------------------- dolarización
     st.subheader("¿Se dolarizan los ahorros?")
     dol = s["club_dolarizacion_depositos"]
     hace_un_anio = dol[: dol.index[-1] - pd.DateOffset(years=1)].iloc[-1]
@@ -115,7 +88,7 @@ def render(meta):
     metodologia(meta, "club_dolarizacion_depositos")
     st.divider()
 
-    # 6 ---------------------------------------------------------------- agregados reales
+    # 4 ---------------------------------------------------------------- agregados reales
     st.subheader("¿Cuánto dinero y crédito hay en términos reales?")
     reales = {"Base monetaria": s["club_base_real"], "M2": s["club_m2_real"],
               "Préstamos en pesos": s["club_prestamos_pesos_real"]}

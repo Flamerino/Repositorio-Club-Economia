@@ -1,6 +1,7 @@
 """Acceso a datos para la app: lee de Supabase (o de los CSV locales en modo desarrollo)."""
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pandas as pd
@@ -32,9 +33,9 @@ def _config():
     return url + "/rest/v1", headers
 
 
-def _consultar(tabla, params):
+def _consultar(tabla, params, conf=None):
     """GET paginado: trae todas las filas, de a 1000."""
-    base, headers = _config()
+    base, headers = conf or _config()
     filas, offset = [], 0
     while True:
         r = requests.get(f"{base}/{tabla}", headers=headers, timeout=60,
@@ -66,15 +67,33 @@ def _observaciones_locales():
     return pd.concat(pd.read_csv(p) for p in (RAIZ / "data" / "processed").glob("*/observaciones.csv"))
 
 
+def _a_serie(df, serie_id):
+    if df.empty:
+        return pd.Series(dtype=float, name=serie_id, index=pd.DatetimeIndex([], name="fecha"))
+    s = pd.Series(df["valor"].astype(float).values, index=pd.to_datetime(df["fecha"]), name=serie_id)
+    return s.sort_index()
+
+
+def _bajar(serie_id, conf):
+    """Una serie desde Supabase. Sin llamadas a Streamlit: se usa desde hilos."""
+    return _a_serie(pd.DataFrame(_consultar("observaciones", {
+        "select": "fecha,valor", "serie_id": f"eq.{serie_id}", "order": "fecha.asc"}, conf)), serie_id)
+
+
 @st.cache_data(ttl=CACHE, show_spinner=False)
 def observaciones(serie_id):
     if LOCAL:
         obs = _observaciones_locales()
-        df = obs[obs["serie_id"] == serie_id][["fecha", "valor"]]
-    else:
-        df = pd.DataFrame(_consultar("observaciones", {
-            "select": "fecha,valor", "serie_id": f"eq.{serie_id}", "order": "fecha.asc"}))
-    if df.empty:
-        return pd.Series(dtype=float, name=serie_id)
-    s = pd.Series(df["valor"].astype(float).values, index=pd.to_datetime(df["fecha"]), name=serie_id)
-    return s.sort_index()
+        return _a_serie(obs[obs["serie_id"] == serie_id][["fecha", "valor"]], serie_id)
+    return _bajar(serie_id, _config())
+
+
+@st.cache_data(ttl=CACHE, show_spinner="Cargando datos…")
+def varias(ids):
+    """Varias series de una vez, bajadas en paralelo. Devuelve {id: serie}."""
+    ids = tuple(ids)
+    if LOCAL:
+        return {i: observaciones(i) for i in ids}
+    conf = _config()
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        return dict(zip(ids, ex.map(lambda i: _bajar(i, conf), ids)))

@@ -16,7 +16,7 @@ SERIES = {
     "BCRA por API (reservas, base, depósitos, tasas...)": "bcra_api_74",
     "BCRA ITCRM": "bcra_itcrm",
     "INDEC IPC nivel general": "indec_ipc_nivel_general",
-    "Elaboración propia (diarias)": "club_respaldo_base",
+    "Elaboración propia (diarias)": "club_dolarizacion_depositos",
     "Elaboración propia (con IPC)": "club_base_real",
     "Pobreza (EPH, semestral)": "club_pobreza",
     "Canasta Básica Total (INDEC)": "indec_cbt_gran_buenos_aires",

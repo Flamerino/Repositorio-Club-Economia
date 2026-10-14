@@ -45,9 +45,15 @@ def mensual(s, como="mean"):
     return m[m.index < pd.Timestamp.today().normalize().replace(day=1)]  # sin el mes en curso (incompleto)
 
 
+# Series que se dejaron de publicar: se borran de la base en cada corrida (idempotente).
+# - club_respaldo_base / club_tc_convertibilidad: usaban reservas brutas, que sobreestiman el respaldo.
+# - club_carry_usd: medido al dólar oficial, no era replicable con cepo.
+RETIRADAS = ["club_respaldo_base", "club_tc_convertibilidad", "club_carry_usd"]
+
+
 # ---------------------------------------------------------------- cálculos
 def calcular():
-    reservas, base, tc = serie("bcra_api_74"), serie("bcra_api_71"), serie("bcra_api_84")
+    base = serie("bcra_api_71")
     m2, prestamos = serie("bcra_api_109"), serie("bcra_api_117")
     dep_usd, dep_tot, prest_tot = serie("bcra_api_104"), serie("bcra_api_106"), serie("bcra_api_127")
     badlar, itcrm = serie("bcra_api_139"), serie("bcra_itcrm")
@@ -57,20 +63,7 @@ def calcular():
 
     out = {}
 
-    # 1. Tipo de cambio "de convertibilidad" y respaldo de la base
-    out["club_tc_convertibilidad"] = ((base / reservas).dropna(), dict(
-        nombre="Tipo de cambio de convertibilidad (base monetaria / reservas)", unidad="$ por USD", frecuencia="D",
-        descripcion="Base monetaria (millones de $) dividida por reservas internacionales brutas (millones de USD). "
-                    "Es el tipo de cambio al que las reservas alcanzarían para respaldar toda la base monetaria. "
-                    "Fuentes: BCRA (IdVariable 71 y 74)."))
-    out["club_respaldo_base"] = ((reservas * tc / base * 100).dropna(), dict(
-        nombre="Respaldo de la base monetaria con reservas (al tipo de cambio oficial)", unidad="%", frecuencia="D",
-        descripcion="Reservas brutas valuadas al tipo de cambio oficial, como % de la base monetaria. "
-                    "Por encima de 100% las reservas cubren toda la base. Usa reservas brutas: no descuenta "
-                    "swaps, encajes ni deuda de corto plazo, por lo que sobreestima el respaldo efectivo. "
-                    "Fuentes: BCRA (IdVariable 71, 74 y 84)."))
-
-    # 2. Dolarización y profundidad del crédito
+    # 1. Dolarización y profundidad del crédito
     out["club_dolarizacion_depositos"] = ((dep_usd / dep_tot * 100).dropna(), dict(
         nombre="Dolarización de los depósitos privados", unidad="%", frecuencia="D",
         descripcion="Depósitos en dólares del sector privado (expresados en pesos) como % del total de depósitos "
@@ -80,15 +73,16 @@ def calcular():
         descripcion="Préstamos totales al sector privado (pesos y dólares) como % de los depósitos privados. "
                     "Mide cuánto de lo que capta el sistema se vuelca a crédito. Fuentes: BCRA (IdVariable 106 y 127)."))
 
-    # 3. Tipo de cambio real vs su promedio histórico
+    # 2. Tipo de cambio real vs su promedio histórico
     out["club_itcrm_desvio"] = (((itcrm / itcrm.mean() - 1) * 100).dropna(), dict(
         nombre="Tipo de cambio real multilateral: desvío respecto de su promedio histórico", unidad="%",
         frecuencia="D",
         descripcion=f"ITCRM dividido su promedio desde {itcrm.index.min():%Y}, menos 1. Valores negativos: el peso está "
                     "más apreciado que el promedio (el país está 'caro' en dólares); positivos: más depreciado. "
-                    "El promedio se recalcula con cada actualización. Fuente: BCRA (ITCRM)."))
+                    "El promedio se recalcula con cada actualización e incluye períodos extremos (convertibilidad, salida de "
+                    "2002), así que no debe leerse como un tipo de cambio 'de equilibrio'. Fuente: BCRA (ITCRM)."))
 
-    # 4. Tasa real ex post
+    # 3. Tasa real ex post
     tem = mensual(badlar) / 100 * 30 / 365
     infl = ipc.pct_change()
     real = ((1 + tem) / (1 + infl.shift(-1)) - 1).dropna()
@@ -99,19 +93,7 @@ def calcular():
                     "del mes siguiente. Negativo: el plazo fijo pierde contra la inflación. "
                     "Fuentes: BCRA (IdVariable 139), INDEC (IPC nivel general)."))
 
-    # 5. Carry trade en dólares
-    tc_fin = mensual(tc, "last")
-    tem_mes = mensual(badlar) / 100 * 30 / 365
-    ret = ((1 + tem_mes.shift(1)) * tc_fin.shift(1) / tc_fin - 1).dropna()
-    out["club_carry_usd"] = ((1 + ret).cumprod() * 100, dict(
-        nombre=f"Carry trade: plazo fijo BADLAR medido en dólares oficiales (base {ret.index.min():%m/%Y}=100)",
-        unidad="Índice", frecuencia="M",
-        descripcion="Resultado acumulado de pasar dólares a pesos al tipo de cambio oficial, renovar todos los meses "
-                    "un plazo fijo a la tasa BADLAR y volver a dólares. Si sube, la tasa le ganó a la devaluación "
-                    "(el carry dio ganancia en USD). Para medirlo desde otra fecha, usar la transformación "
-                    "'Base 100'. No incluye impuestos ni brecha cambiaria. Fuentes: BCRA (IdVariable 84 y 139)."))
-
-    # 6. Agregados reales (a pesos del último mes con IPC)
+    # 4. Agregados reales (a pesos del último mes con IPC)
     for sid, origen, nombre, idv in [
         ("club_base_real", base, "Base monetaria real", 71),
         ("club_m2_real", m2, "M2 real", 109),
@@ -128,6 +110,10 @@ def calcular():
 
 
 def main():
+    if os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_SERVICE_KEY"):
+        sys.path.insert(0, str(RAIZ / "src"))
+        from supabase_db import borrar_series
+        borrar_series(RETIRADAS)
     out = calcular()
     metas, obs = [], []
     for sid, (s, m) in out.items():

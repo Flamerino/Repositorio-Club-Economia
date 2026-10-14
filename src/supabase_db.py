@@ -49,6 +49,16 @@ def upsert(tabla, registros, clave):
     return len(registros)
 
 
+def borrar_series(ids):
+    """Borra series (y sus observaciones, por ON DELETE CASCADE). No falla si ya no existen."""
+    if not ids:
+        return
+    base, headers = _config()
+    r = requests.delete(f"{base}/series", headers=headers, timeout=60,
+                        params={"id": f"in.({','.join(ids)})"})
+    r.raise_for_status()
+
+
 def ultima_fecha(serie_id):
     base, headers = _config()
     r = requests.get(f"{base}/observaciones", headers=headers, timeout=60,
