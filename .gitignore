@@ -14,3 +14,6 @@ data/processed/bcra/observaciones.csv
 
 # lista temporal de carpetas a commitear (la genera src/actualizar_solo_repo.py)
 .rutas_solo_repo
+
+# Libros del BCRA que se descargan en cada corrida (se versionan sus series procesadas, no el Excel)
+data/raw/bcra/rem/

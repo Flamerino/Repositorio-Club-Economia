@@ -29,6 +29,14 @@ CARPETA_FUENTE = {  # nombre de carpeta por fuente (lo que no está acá se arma
     "ANSES / Secretaría de Seguridad Social": "anses",
     "Secretaría de Hacienda (IMIG)": "secretaria_de_hacienda",
     "Secretaría de Trabajo (SIPA)": "secretaria_de_trabajo",
+    "BCRA (REM)": "bcra",
+    "Universidad Torcuato Di Tella (ICG), vía opinAr": "utdt_confianza_en_el_gobierno",
+    "FRED (Reserva Federal de St. Louis)": "fred_estados_unidos_y_commodities",
+    "Banco Central de Brasil": "brasil_banco_central",
+    "FMI": "fmi",
+    "Proyecto Maddison": "proyecto_maddison",
+    "Secretaría de Energía": "secretaria_de_energia",
+    "Ministerio de Agricultura": "ministerio_de_agricultura",
 }
 
 
@@ -113,11 +121,14 @@ def main():
               ", un archivo CSV por serie (`fecha, valor`), listos para abrir en Excel o Google Sheets. "
               "Se actualizan solos todas las semanas.", "",
               "El detalle de cada serie (unidad, período, fuente y cómo se construye) está en "
-              "[`INDICE.csv`](INDICE.csv).", "", "| Fuente | Series | Temas | Desde | Hasta |", "|---|---|---|---|---|"]
+              "[`INDICE.csv`](INDICE.csv). De dónde sale cada fuente y cómo se valida: "
+              "[`docs/FUENTES.md`](../docs/FUENTES.md). Cómo se calculan las series propias: "
+              "[`docs/METODOLOGIA.md`](../docs/METODOLOGIA.md).", "",
+              "Esta carpeta se genera automáticamente; no editar a mano.", "", "| Fuente | Series | Temas | Desde | Hasta |", "|---|---|---|---|---|"]
     for carpeta, g in ind.groupby("carpeta"):
         temas = ", ".join(sorted(g["tema"].dropna().unique()))
-        lineas.append(f"| [{g['fuente'].iloc[0]}]({carpeta}/) | {len(g)} | {temas} | {g['desde'].min()[:4]} | "
-                      f"{g['hasta'].max()[:7]} |")
+        hasta = g["hasta"].max()[:4] if (g["frecuencia"] == "Anual").all() else g["hasta"].max()[:7]
+        lineas.append(f"| [{g['fuente'].iloc[0]}]({carpeta}/) | {len(g)} | {temas} | {g['desde'].min()[:4]} | {hasta} |")
         sub = [f"# {g['fuente'].iloc[0]}", "", f"{len(g)} series.", ""]
         for tema, t in g.groupby("tema"):
             sub += [f"## {tema}", "", "| Serie | Unidad | Frecuencia | Desde | Hasta |", "|---|---|---|---|---|"]

@@ -50,7 +50,7 @@ jobs:
           python src/indec/pobreza.py
           python src/cargar_supabase.py pobreza
 
-      - name: Fuentes solo repo (datos.gob.ar, mercados, Banco Mundial)
+      - name: Fuentes solo repo (lista en src/actualizar_solo_repo.py)
         run: python src/actualizar_solo_repo.py
 
       - name: Recalcular series de elaboración propia

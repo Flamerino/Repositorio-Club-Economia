@@ -21,6 +21,11 @@ FUENTES = {  # script: carpetas que escribe (el workflow commitea esas carpetas)
     "src/datos_gob/actualizar.py": ["data/processed/datos_gob", "data/raw/datos_gob", "data/raw/indec/salarios"],
     "src/mercados/actualizar.py": ["data/processed/mercados", "data/raw/mercados"],
     "src/banco_mundial/actualizar.py": ["data/processed/banco_mundial", "data/raw/banco_mundial/indicadores"],
+    "src/internacional/actualizar.py": ["data/processed/internacional", "data/raw/internacional", "data/raw/maddison"],
+    "src/opinion/actualizar.py": ["data/processed/opinion"],
+    "src/bcra/balance_cambiario.py": ["data/processed/balance_cambiario"],
+    "src/bcra/rem.py": ["data/processed/rem"],
+    "src/indec/distribucion.py": ["data/processed/distribucion"],
 }
 LISTA_RUTAS = RAIZ / ".rutas_solo_repo"  # la lee el workflow para saber qué commitear
 

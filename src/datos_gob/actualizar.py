@@ -77,8 +77,13 @@ def get(ruta, params, intentos=4):
     return None
 
 
-def serie_api(id_api):
+def serie_api(id_api, texto_busqueda=None):
     js = get("series/", {"ids": id_api, "format": "json", "metadata": "full", "limit": 5000, "sort": "asc"})
+    if (not js or not js.get("data")) and texto_busqueda:
+        # algunas series fallan al pedir metadatos completos; la búsqueda ya confirmó cuál es
+        js = get("series/", {"ids": id_api, "format": "json", "metadata": "none", "limit": 5000, "sort": "asc"})
+        if js and js.get("data"):
+            js["meta"] = [{}, {"field": {"description": texto_busqueda}, "dataset": {}}]
     if not js or not js.get("data"):
         return None
     meta = next((m for m in js.get("meta", []) if isinstance(m, dict) and "field" in m), {})
@@ -99,20 +104,22 @@ def resolver(spec):
     if not spec.get("q"):
         return None
     candidatos = {}
-    for h in (get("search/", {"q": spec["q"], "limit": 50}) or {}).get("data", []):
+    consultas = spec["q"] if isinstance(spec["q"], list) else [spec["q"]]
+    hits = [h for q in consultas for h in (get("search/", {"q": q, "limit": 100}) or {}).get("data", [])]
+    for h in hits:
         campo, dataset = h.get("field", {}), h.get("dataset", {})
         texto = f"{campo.get('description', '')} | {campo.get('title', '')} | {dataset.get('title', '')}"
         if coincide(spec, texto) and FREQ.get(campo.get("frequency")) in (None, spec["freq"]):
             candidatos[campo.get("id")] = texto
     if spec.get("id") in candidatos:  # el ID configurado aparece en la búsqueda: era un corte momentáneo
-        got = serie_api(spec["id"])
+        got = serie_api(spec["id"], candidatos[spec["id"]])
         if got is not None:
             nota(f"el ID {spec['id']} respondió al reintentar")
             return got
     if len(candidatos) == 1:
         id_api = next(iter(candidatos))
         nota(f"resuelta por texto -> {id_api} ({candidatos[id_api][:90]})")
-        return serie_api(id_api)
+        return serie_api(id_api, candidatos[id_api])
     lista = "; ".join(f"{k}: {v[:60]}" for k, v in list(candidatos.items())[:6]) or "ninguno"
     aviso(f"{spec['sid']}: no se pudo identificar la serie en la API ({len(candidatos)} candidatos: {lista}). "
           "Fijar el ID correcto en src/datos_gob/catalogo.py.")

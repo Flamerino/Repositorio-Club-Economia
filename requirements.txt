@@ -1,7 +1,7 @@
-pandas
-openpyxl
-xlrd
-gdown
-pyeph
-pyarrow
+# Dependencias de los scripts de src/ (la página tiene las suyas en app/requirements.txt)
+pandas>=2.2
+numpy
 requests
+openpyxl   # Excel .xlsx/.xlsm (BCRA, REM, balance cambiario)
+xlrd       # Excel .xls (INDEC, BCRA)
+pyarrow    # parquet (EPH)

@@ -1,6 +1,26 @@
 # Club de Economía UADE (elaboración propia)
 
-27 series.
+42 series.
+
+## Distribución del ingreso
+
+| Serie | Unidad | Frecuencia | Desde | Hasta |
+|---|---|---|---|---|
+| [Brecha de ingresos: decil 10 sobre decil 1 (promedios)](distribucion_del_ingreso/brecha_de_ingresos_decil_10_sobre_decil_1.csv) | Veces | Trimestral | 2017-01-01 | 2025-10-01 |
+| [Coeficiente de Gini del ingreso per cápita familiar](distribucion_del_ingreso/coeficiente_de_gini_del_ingreso_per_capita_familiar.csv) | Índice (0 a 1) | Trimestral | 2017-01-01 | 2025-10-01 |
+| [Ingreso per cápita familiar mediano](distribucion_del_ingreso/ingreso_per_capita_familiar_mediano.csv) | $ corrientes | Trimestral | 2017-01-01 | 2025-10-01 |
+| [Ingreso per cápita familiar promedio](distribucion_del_ingreso/ingreso_per_capita_familiar_promedio.csv) | $ corrientes | Trimestral | 2017-01-01 | 2025-10-01 |
+| [Ingreso per cápita familiar promedio, real (pesos de 10/2025)](distribucion_del_ingreso/ingreso_per_capita_familiar_promedio_real.csv) | $ constantes | Trimestral | 2017-01-01 | 2025-10-01 |
+| [Participación del decil 1 en el ingreso total](distribucion_del_ingreso/participacion_del_decil_1_en_el_ingreso_total.csv) | % del ingreso | Trimestral | 2017-01-01 | 2025-10-01 |
+| [Participación del decil 10 en el ingreso total](distribucion_del_ingreso/participacion_del_decil_10_en_el_ingreso_total.csv) | % del ingreso | Trimestral | 2017-01-01 | 2025-10-01 |
+| [Participación del decil 2 en el ingreso total](distribucion_del_ingreso/participacion_del_decil_2_en_el_ingreso_total.csv) | % del ingreso | Trimestral | 2017-01-01 | 2025-10-01 |
+| [Participación del decil 3 en el ingreso total](distribucion_del_ingreso/participacion_del_decil_3_en_el_ingreso_total.csv) | % del ingreso | Trimestral | 2017-01-01 | 2025-10-01 |
+| [Participación del decil 4 en el ingreso total](distribucion_del_ingreso/participacion_del_decil_4_en_el_ingreso_total.csv) | % del ingreso | Trimestral | 2017-01-01 | 2025-10-01 |
+| [Participación del decil 5 en el ingreso total](distribucion_del_ingreso/participacion_del_decil_5_en_el_ingreso_total.csv) | % del ingreso | Trimestral | 2017-01-01 | 2025-10-01 |
+| [Participación del decil 6 en el ingreso total](distribucion_del_ingreso/participacion_del_decil_6_en_el_ingreso_total.csv) | % del ingreso | Trimestral | 2017-01-01 | 2025-10-01 |
+| [Participación del decil 7 en el ingreso total](distribucion_del_ingreso/participacion_del_decil_7_en_el_ingreso_total.csv) | % del ingreso | Trimestral | 2017-01-01 | 2025-10-01 |
+| [Participación del decil 8 en el ingreso total](distribucion_del_ingreso/participacion_del_decil_8_en_el_ingreso_total.csv) | % del ingreso | Trimestral | 2017-01-01 | 2025-10-01 |
+| [Participación del decil 9 en el ingreso total](distribucion_del_ingreso/participacion_del_decil_9_en_el_ingreso_total.csv) | % del ingreso | Trimestral | 2017-01-01 | 2025-10-01 |
 
 ## Elaboración propia
 
