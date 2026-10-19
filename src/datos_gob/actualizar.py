@@ -55,11 +55,14 @@ def norm(x):
 
 def coincide(spec, texto):
     t = norm(texto)
+    if spec.get("exacto") and not re.search(spec["exacto"], t):
+        return False
     ok = all(any(norm(a) in t for a in (k if isinstance(k, tuple) else (k,))) for k in spec["kw"])
     return ok and not any(norm(k) in t for k in spec.get("kw_not", []))
 
 
-def get(ruta, params, intentos=3):
+def get(ruta, params, intentos=4):
+    time.sleep(0.3)  # no saturar la API (los cortes momentáneos dejaban series afuera)
     for intento in range(intentos):
         try:
             r = sesion.get(f"{API}/{ruta}", params=params, timeout=30)
@@ -68,9 +71,9 @@ def get(ruta, params, intentos=3):
             continue
         if r.status_code == 200:
             return r.json()
-        if r.status_code in (400, 404):
+        if r.status_code == 404:
             return None
-        time.sleep(2 ** intento)
+        time.sleep(2 ** (intento + 1))
     return None
 
 
@@ -101,6 +104,11 @@ def resolver(spec):
         texto = f"{campo.get('description', '')} | {campo.get('title', '')} | {dataset.get('title', '')}"
         if coincide(spec, texto) and FREQ.get(campo.get("frequency")) in (None, spec["freq"]):
             candidatos[campo.get("id")] = texto
+    if spec.get("id") in candidatos:  # el ID configurado aparece en la búsqueda: era un corte momentáneo
+        got = serie_api(spec["id"])
+        if got is not None:
+            nota(f"el ID {spec['id']} respondió al reintentar")
+            return got
     if len(candidatos) == 1:
         id_api = next(iter(candidatos))
         nota(f"resuelta por texto -> {id_api} ({candidatos[id_api][:90]})")
@@ -154,7 +162,7 @@ def main():
         aviso("datos.gob.ar no responde; se mantienen los datos anteriores.")
         return
     csv = salarios_csv()
-    metas, obs, ok, reporte = [], [], 0, []
+    metas, obs, ok, reporte, calculadas = [], [], 0, [], {}
     for spec in SERIES:
         ACTUAL["sid"] = spec["sid"]
         origen = None
@@ -164,6 +172,13 @@ def main():
             got = resolver(spec)
             if got is not None:
                 s, origen = got["s"], f"API Series de Tiempo, ID {got['id']} ({got['texto'][:120]})"
+        if origen is None and spec.get("calculo"):
+            a, op, b = spec["calculo"]
+            sa, sb = calculadas.get(a), calculadas.get(b)
+            if sa is not None and sb is not None:
+                s = (sa - sb if op == "-" else sa + sb).dropna()
+                origen = f"calculada: {a} {op} {b} (la API no publica la serie)"
+                nota(origen)
         if origen is None:
             if spec["sid"] in previas:  # se conserva lo que había
                 s, origen = previas[spec["sid"]], "sin actualizar en esta corrida (se conserva el dato anterior)"
@@ -189,8 +204,9 @@ def main():
                 s, origen = previas[spec["sid"]], "sin actualizar: la fuente no coincidió con la historia guardada"
         hoy = pd.Timestamp.today().normalize()
         ultimo = s.index.max()
-        if ultimo <= hoy and (hoy - ultimo).days > spec["dias"]:
-            aviso(f"{spec['sid']}: último dato {ultimo:%Y-%m}, hace {(hoy - ultimo).days} días. "
+        fin_periodo = ultimo + pd.DateOffset(months={"M": 1, "T": 3, "S": 6, "A": 12}.get(spec["freq"], 1))
+        if ultimo <= hoy and (hoy - fin_periodo).days > spec["dias"]:
+            aviso(f"{spec['sid']}: último dato {ultimo:%Y-%m}; el período cerró hace {(hoy - fin_periodo).days} días. "
                   "La fuente puede estar congelada.")
         descripcion = f"Fuente: {spec['fuente']}. Origen del dato: {origen}."
         if spec.get("nota"):
@@ -200,8 +216,9 @@ def main():
                       "id_api_bcra": None, "archivo_origen": "src/datos_gob/actualizar.py", "descripcion": descripcion})
         obs.append(pd.DataFrame({"serie_id": spec["sid"], "fecha": s.index.strftime("%Y-%m-%d"), "valor": s.values}))
         ok += 1
+        calculadas[spec["sid"]] = s
         estado = "OK" if not origen.startswith("sin actualizar") else "CONSERVADA"
-        if any("hace" in n and "días" in n for n in NOTAS.get(spec["sid"], [])):
+        if any("cerró hace" in n for n in NOTAS.get(spec["sid"], [])):
             estado += " (atrasada)"
         reporte.append({"serie": spec["sid"], "estado": estado, "origen": origen, "desde": f"{s.index.min():%Y-%m}",
                         "hasta": f"{ultimo:%Y-%m}", "notas": " | ".join(NOTAS.get(spec["sid"], []))})

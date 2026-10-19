@@ -8,7 +8,10 @@ Cada entrada:
   kw_not  palabras que NO pueden aparecer.
   freq    frecuencia esperada: M, T (trimestral) o A.
   desde   recorte inicial (p. ej. series con cambios de moneda antes de 1992).
-  dias    edad máxima razonable del último dato; si se supera, queda un aviso de "serie congelada".
+  dias    días máximos desde el FIN del último período con dato; si se supera, aviso de "serie congelada".
+  exacto  expresión regular que debe cumplir el comienzo de la descripción (para no confundir un total
+          con sus sub-rubros).
+  calculo (serie_a, "+"/"-", serie_b): si la API no tiene la serie, se calcula con otras del catálogo.
 """
 
 SERIES = [
@@ -21,7 +24,7 @@ SERIES = [
     dict(sid="indec_emae_desest", nombre="EMAE desestacionalizado (2004=100)",
          categoria="Actividad", unidad="Índice", freq="M", dias=110,
          id="143.3_NO_PR_2004_A_31", q="EMAE nivel general desestacionalizado",
-         kw=[("emae", "estimador mensual"), "desestacionaliz"],
+         kw=[("emae", "estimador mensual"), "desestacionaliz"], kw_not=["variacion"],
          fuente="INDEC", fuente_id="gauss314/skills (verificado 2026-06)"),
 
     # ------------------------------------------------------------------ salarios e ingresos
@@ -62,8 +65,9 @@ SERIES = [
          nota="No incluye el bono previsional que se paga aparte. Recortada desde 1992 por los cambios de moneda."),
     dict(sid="anses_auh", nombre="Asignación Universal por Hijo (monto por hijo)",
          categoria="Jubilaciones y transferencias", unidad="$", freq="M", dias=120,
-         q="asignacion universal por hijo monto", kw=["asignacion universal"], kw_not=["embarazo", "titulares", "cantidad"],
-         fuente="ANSES"),
+         id="165.1_AAUH_0_0_3", q="asignacion universal por hijo monto",
+         kw=["asignacion universal"], kw_not=["embarazo", "titulares", "cantidad"],
+         fuente="ANSES", fuente_id="buscador de la API (corrida del 2026-10-15)"),
 
     # ------------------------------------------------------------------ fiscal (IMIG, base caja)
     dict(sid="mecon_resultado_primario", nombre="Resultado primario del Sector Público Nacional no financiero (base caja)",
@@ -73,26 +77,30 @@ SERIES = [
          fuente_id="datosgobar/analisis-datos-python (notebook oficial); mau1878/REM"),
     dict(sid="mecon_resultado_financiero", nombre="Resultado financiero del Sector Público Nacional no financiero (base caja)",
          categoria="Fiscal", unidad="Millones de $", freq="M", dias=75,
-         q="IMIG resultado financiero sector publico nacional mensual", kw=["resultado financiero"],
-         fuente="Secretaría de Hacienda (IMIG)"),
+         id="452.3_RESULTADO_ERO_0_M_20_25", q="IMIG resultado financiero", kw=["imig", "resultado financiero"],
+         fuente="Secretaría de Hacienda (IMIG)", fuente_id="buscador de la API (corrida del 2026-10-15)"),
     dict(sid="mecon_ingresos_totales", nombre="Ingresos totales del Sector Público Nacional no financiero (base caja)",
          categoria="Fiscal", unidad="Millones de $", freq="M", dias=75,
-         q="IMIG ingresos totales sector publico nacional mensual", kw=[("ingresos totales", "recursos totales")],
+         q="IMIG ingresos totales", kw=["imig", "ingresos totales"],
+         exacto=r"^imig\. ingresos totales\s*(\||$)",  # solo el total, no sus sub-rubros
          fuente="Secretaría de Hacienda (IMIG)"),
     dict(sid="mecon_gasto_primario", nombre="Gasto primario del Sector Público Nacional no financiero (base caja)",
          categoria="Fiscal", unidad="Millones de $", freq="M", dias=75,
-         q="IMIG gasto primario sector publico nacional mensual", kw=[("gasto primario", "gastos primarios")],
-         fuente="Secretaría de Hacienda (IMIG)"),
-    dict(sid="mecon_intereses", nombre="Intereses de la deuda del Sector Público Nacional no financiero (base caja)",
+         q="IMIG gasto primario", kw=["imig", ("gasto primario", "gastos primarios")],
+         exacto=r"^imig\. gastos? primarios?( totales?)?\s*(\||$)",
+         calculo=("mecon_ingresos_totales", "-", "mecon_resultado_primario"),  # si la API no la tiene
+         fuente="Secretaría de Hacienda (IMIG)",
+         nota="Si la API no la publica, se calcula como ingresos totales menos resultado primario (identidad contable)."),
+    dict(sid="mecon_intereses", nombre="Intereses netos de la deuda del Sector Público Nacional no financiero (base caja)",
          categoria="Fiscal", unidad="Millones de $", freq="M", dias=75,
-         q="IMIG intereses deuda sector publico nacional mensual", kw=["intereses"], kw_not=["intrasector"],
-         fuente="Secretaría de Hacienda (IMIG)"),
+         id="452.3_INTERESES_TOS_0_M_15_62", q="IMIG intereses netos", kw=["imig", "intereses"],
+         fuente="Secretaría de Hacienda (IMIG)", fuente_id="buscador de la API (corrida del 2026-10-15)"),
     # ------------------------------------------------------------------ actividad (sectores y PBI)
     dict(sid="indec_pib_trimestral", nombre="PIB a precios de 2004, serie original (trimestral)",
          categoria="Actividad", unidad="Millones de $ de 2004", freq="T", dias=200,
-         id="4.2_OGP_2004_T_17", q="PIB precios de comprador millones de pesos de 2004 trimestral",
-         kw=[("pib", "producto interno bruto"), "2004"], kw_not=["desestacionaliz", "implicit"],
-         fuente="INDEC", fuente_id="mau1878/REM (id de partida, se confirma con los metadatos)"),
+         id="9.2_PP2_2004_T_16", q="PIB a precios constantes 2004 en millones de pesos",
+         kw=[("pib", "producto interno bruto"), "constantes", "2004"], kw_not=["desestacionaliz", "implicit", "corrientes"],
+         fuente="INDEC", fuente_id="buscador de la API (corrida del 2026-10-15)"),
     dict(sid="indec_ipi", nombre="IPI manufacturero, desestacionalizado",
          categoria="Actividad", unidad="Índice", freq="M", dias=110,
          id="453.1_SERIE_DESEADA_0_0_24_58", q="IPI manufacturero nivel general desestacionalizado",
@@ -126,8 +134,9 @@ SERIES = [
          kw=[("jubilatorio", "descuento")], fuente="INDEC", fuente_id="Juanpintoselso33/cigob-informe-coyuntura (2026)"),
     dict(sid="trabajo_empleo_registrado", nombre="Trabajadores asalariados registrados (SIPA)",
          categoria="Mercado de trabajo", unidad="Miles de personas", freq="M", dias=120,
-         id="151.1_AARIADODAD_2012_M_31", q="trabajadores asalariados registrados sector privado SIPA",
-         kw=[("asalariad", "trabajador"), "registrad"], fuente="Secretaría de Trabajo (SIPA)",
+         id="151.1_AARIADODAD_2012_M_31", q="asalariados sector privado sin estacionalidad total pais",
+         kw=["asalariados", "sector privado"], kw_not=["provincia", "rama", "region"],
+         fuente="Secretaría de Trabajo (SIPA)",
          fuente_id="Juanpintoselso33/cigob-informe-coyuntura (2026)"),
 
     # ------------------------------------------------------------------ precios (aperturas del IPC y canastas)
