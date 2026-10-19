@@ -1,10 +1,10 @@
 {
-  "corrida": "2026-10-14 23:52 UTC",
+  "corrida": "2026-10-19 18:43 UTC",
   "ultimo_dato": {
-    "BCRA por API (reservas, base, depósitos, tasas...)": "2026-10-08",
-    "BCRA ITCRM": "2026-10-14",
+    "BCRA por API (reservas, base, depósitos, tasas...)": "2026-10-13",
+    "BCRA ITCRM": "2026-10-16",
     "INDEC IPC nivel general": "2026-08-01",
-    "Elaboración propia (diarias)": "2026-10-08",
+    "Elaboración propia (diarias)": "2026-10-13",
     "Elaboración propia (con IPC)": "2026-08-01",
     "Pobreza (EPH, semestral)": "2025-07-01",
     "Canasta Básica Total (INDEC)": "2025-12-01"
