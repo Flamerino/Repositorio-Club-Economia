@@ -1,5 +1,7 @@
 # Repositorio de datos — Club de Economía UADE
 
+> 📂 **[Ver todos los datos](datos/)**: más de 340 series, un archivo CSV por serie, ordenadas por fuente y tema, listas para abrir en Excel. El índice completo está en [`datos/INDICE.csv`](datos/INDICE.csv).
+
 Repositorio de series de tiempo de la economía argentina para el área de **policy and public impact** del Club de Economía. La idea es tener en un solo lugar las fuentes oficiales, ordenadas y reproducibles, para calcular fluctuaciones y usarlas como base de análisis.
 
 ## Estructura
@@ -131,6 +133,10 @@ Siguen manuales: las aperturas del IPC que se muestran en la página (las princi
 - **Canastas de las otras regiones:** INDEC las publica con el informe semestral. Mientras no estén, ese semestre no se calcula (no se estima nada).
 
 Cada semestre hay que sumar una fila a `data/raw/indec/pobreza_oficial.csv` con la cifra oficial de INDEC. La página la muestra junto a la réplica del Club y avisa cuando INDEC ya publicó un semestre que la réplica todavía no tiene.
+
+## Carpeta `datos/`
+
+`src/exportar_archivos.py` arma `datos/<fuente>/<tema>/<serie>.csv` con **todas** las series del repo (las que se ven en la página y las que están solo en el repo), más `datos/INDICE.csv` y un README por fuente. Se regenera en cada corrida del workflow, así que cualquier fuente nueva aparece sola. La columna `en_la_pagina` del índice indica cuáles se muestran en la página.
 
 ## Fuentes solo en el repo
 
