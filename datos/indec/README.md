@@ -1,6 +1,6 @@
 # INDEC
 
-51 series.
+52 series.
 
 ## Actividad
 
@@ -10,6 +10,7 @@
 | [EMAE: Estimador Mensual de Actividad Económica, serie original (2004=100)](actividad/emae_estimador_mensual_de_actividad_economica_serie_original.csv) | Índice | Mensual | 2004-01-01 | 2026-07-01 |
 | [IPI manufacturero, desestacionalizado](actividad/ipi_manufacturero_desestacionalizado.csv) | Índice | Mensual | 2016-01-01 | 2026-08-01 |
 | [ISAC: actividad de la construcción, nivel general](actividad/isac_actividad_de_la_construccion_nivel_general.csv) | Índice | Mensual | 2012-01-01 | 2026-06-01 |
+| [PIB a precios de 2004, serie original (trimestral)](actividad/pib_a_precios_de_2004_serie_original.csv) | Millones de $ de 2004 | Trimestral | 2004-01-01 | 2026-04-01 |
 
 ## Canastas básicas
 
