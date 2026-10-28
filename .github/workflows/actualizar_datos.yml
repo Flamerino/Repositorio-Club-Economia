@@ -11,11 +11,17 @@ on:
         default: false
 
 permissions:
-  contents: write   # para guardar data/estado_actualizacion.json
+  contents: write   # para commitear datos/ y el estado de la corrida
+
+# Una sola corrida a la vez: si se lanza otra mientras corre una, espera a que termine
+concurrency:
+  group: actualizar-datos
+  cancel-in-progress: false
 
 jobs:
   actualizar:
     runs-on: ubuntu-24.04
+    timeout-minutes: 30   # una corrida normal tarda ~5 min; si algo se cuelga, se corta acá
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

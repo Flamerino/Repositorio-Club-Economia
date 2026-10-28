@@ -25,7 +25,7 @@ Las fuentes listadas en `SOLO_REPO` (`src/almacen.py`) se publican en `datos/` p
 
 ## Actualización semanal
 
-`.github/workflows/actualizar_datos.yml` corre los lunes a las 9:00 (hora argentina) y también a mano desde **Actions → Actualizar datos → Run workflow**. Pasos:
+`.github/workflows/actualizar_datos.yml` corre los lunes a las 9:00 (hora argentina) y también a mano desde **Actions → Actualizar datos → Run workflow**. Tarda unos 5 minutos; nunca corren dos a la vez (la segunda espera) y una corrida que se cuelga se corta a los 30 minutos. Cada fuente externa se descarta en segundos si no responde, y cada fuente complementaria tiene un límite de 8 minutos. Pasos:
 
 1. **Carga completa** (solo si se tilda al lanzarlo a mano): limpia los archivos del BCRA y del INDEC y los sube a la base.
 2. **BCRA por API:** actualiza las 154 series con `IdVariable`.
