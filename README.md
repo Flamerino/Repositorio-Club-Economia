@@ -2,7 +2,7 @@
 
 Base de datos abierta y reproducible sobre la economía argentina: series oficiales de BCRA, INDEC, Ministerio de Economía y otros organismos, contexto internacional y series de elaboración propia del Club. Todo se actualiza automáticamente cada semana y cada cifra puede rastrearse hasta su fuente.
 
-**[📂 Datos](datos/)** · **[🌐 Página web](https://club-economia-uade.streamlit.app/)** · **[📑 Fuentes](docs/FUENTES.md)** · **[📐 Metodología](docs/METODOLOGIA.md)** · **[⚙️ Arquitectura](docs/ARQUITECTURA.md)** · **[🤝 Cómo contribuir](CONTRIBUIR.md)**
+**[📂 Datos](datos/)** · **[🌐 Página web](https://club-economia-uade.streamlit.app/)** · **[📑 Fuentes](docs/FUENTES.md)** · **[📐 Metodología](docs/METODOLOGIA.md)** · **[⚙️ Arquitectura](docs/ARQUITECTURA.md)** · **[🛠️ Mantenimiento](docs/MANUAL.md)** · **[🤝 Cómo contribuir](CONTRIBUIR.md)**
 
 ## Qué hay
 
@@ -40,7 +40,7 @@ reservas = pd.read_csv(url, parse_dates=["fecha"])
 
 ## Actualización
 
-Un workflow de GitHub Actions corre todos los lunes: descarga los datos nuevos, los valida, recalcula las series propias, actualiza la base de datos de la página y regenera [`datos/`](datos/). La última fecha disponible de cada fuente queda registrada en [`data/estado_actualizacion.json`](data/estado_actualizacion.json).
+Un workflow de GitHub Actions corre todos los lunes (qué revisar y cómo resolver problemas: [manual de mantenimiento](docs/MANUAL.md)): descarga los datos nuevos, los valida, recalcula las series propias, actualiza la base de datos de la página y regenera [`datos/`](datos/). La última fecha disponible de cada fuente queda registrada en [`data/estado_actualizacion.json`](data/estado_actualizacion.json).
 
 ## Estructura del repositorio
 
@@ -55,4 +55,4 @@ docs/           Fuentes, metodología y arquitectura
 
 ## Uso y créditos
 
-Los datos pertenecen a sus respectivas fuentes, que se citan en [`docs/FUENTES.md`](docs/FUENTES.md) y en el índice. Al usarlos, citar la fuente original y este repositorio. Proyecto del área de *Policy and Public Impact* del Club de Economía de la Universidad Argentina de la Empresa (UADE).
+Los datos pertenecen a sus respectivas fuentes, que se citan en [`docs/FUENTES.md`](docs/FUENTES.md) y en el índice. Al usarlos, citar la fuente original y este repositorio. Proyecto del área de *Policy and Public Impact* del Club de Economía de la Universidad Argentina de la Empresa (UADE), iniciado por [@Flamerino](https://github.com/Flamerino).

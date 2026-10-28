@@ -17,7 +17,8 @@ DATOS = RAIZ / "datos"
 INDICE = DATOS / "INDICE.csv"
 
 # Fuentes que se publican en datos/ pero no se suben a la base ni aparecen en la página.
-# Para mostrar una en la página, sacarla de este conjunto.
+# Para mostrar una en la página, sacarla de este conjunto: en la próxima corrida se sube sola a la base
+# y aparece en la pestaña "Explorar series".
 SOLO_REPO = {"datos_gob", "mercados", "banco_mundial", "internacional", "opinion", "balance_cambiario", "rem",
              "distribucion"}
 FREQ_CODIGO = {"Diaria": "D", "Mensual": "M", "Trimestral": "T", "Semestral": "S", "Anual": "A"}

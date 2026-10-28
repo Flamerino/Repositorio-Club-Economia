@@ -32,7 +32,7 @@ Las fuentes listadas en `SOLO_REPO` (`src/almacen.py`) se publican en `datos/` p
 3. **IPC:** nivel general desde la API de datos.gob.ar.
 4. **ITCRM:** archivo nuevo del BCRA.
 5. **Pobreza e indigencia:** EPH y canastas.
-6. **Fuentes solo repo:** `src/actualizar_solo_repo.py` corre cada fuente de su lista. Si una falla, avisa y sigue con las demás.
+6. **Fuentes complementarias:** `src/actualizar_solo_repo.py` corre cada fuente de su lista. Si una falla, avisa y sigue con las demás. Las que no están en `SOLO_REPO` se suben además a la base.
 7. **Series de elaboración propia:** `src/derivadas/calcular.py`.
 8. **`datos/`:** `src/exportar_archivos.py`. Si una lectura trae menos del 90% de las series que había, no modifica nada.
 9. **Registro:** `src/estado.py` escribe `data/estado_actualizacion.json` y el workflow commitea los datos nuevos.
@@ -72,7 +72,7 @@ DATOS_LOCALES=1 streamlit run app/app.py   # sin conexión, con los CSV de data/
 | `opinion/actualizar.py` | Índice de Confianza en el Gobierno |
 | `banco_mundial/actualizar.py`, `internacional/actualizar.py` | Contexto internacional |
 | `derivadas/calcular.py` | Series de elaboración propia |
-| `actualizar_solo_repo.py` | Orquesta las fuentes que no van a la página |
+| `actualizar_solo_repo.py` | Orquesta las fuentes complementarias y sube a la base las que van a la página |
 | `almacen.py` | Lectura de series ya publicadas; lista de fuentes que no van a la página |
 | `supabase_db.py`, `cargar_supabase.py` | Conexión y carga a la base |
 | `exportar_archivos.py`, `estado.py` | Carpeta `datos/` y registro de la corrida |
