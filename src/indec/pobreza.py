@@ -179,7 +179,7 @@ def extender_gba(cba, cbt):
         return cba, cbt
     desvio = max((gba.loc[comun, "cba"] / cba.loc[comun, "gran_buenos_aires"] - 1).abs().max(),
                  (gba.loc[comun, "cbt"] / cbt.loc[comun, "gran_buenos_aires"] - 1).abs().max())
-    if desvio > 0.001:
+    if desvio > 0.005:  # 0,5%: las diferencias menores son de redondeo entre las dos publicaciones
         print(f"::warning::La serie de canastas de GBA no coincide con la del espejo (desvío {desvio:.2%}); no se usa")
         return cba, cbt
     nuevos = gba.index.difference(cba.index)

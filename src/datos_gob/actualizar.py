@@ -81,9 +81,11 @@ def serie_api(id_api, texto_busqueda=None):
     js = get("series/", {"ids": id_api, "format": "json", "metadata": "full", "limit": 5000, "sort": "asc"})
     if (not js or not js.get("data")) and texto_busqueda:
         # algunas series fallan al pedir metadatos completos; la búsqueda ya confirmó cuál es
-        js = get("series/", {"ids": id_api, "format": "json", "metadata": "none", "limit": 5000, "sort": "asc"})
-        if js and js.get("data"):
-            js["meta"] = [{}, {"field": {"description": texto_busqueda}, "dataset": {}}]
+        for params in ({"metadata": "none", "limit": 5000}, {"metadata": "simple", "limit": 1000}, {"limit": 1000}):
+            js = get("series/", {"ids": id_api, "format": "json", "sort": "asc", **params}, intentos=2)
+            if js and js.get("data"):
+                js["meta"] = [{}, {"field": {"description": texto_busqueda}, "dataset": {}}]
+                break
     if not js or not js.get("data"):
         return None
     meta = next((m for m in js.get("meta", []) if isinstance(m, dict) and "field" in m), {})
@@ -91,7 +93,8 @@ def serie_api(id_api, texto_busqueda=None):
     df = pd.DataFrame(js["data"], columns=["fecha", "valor"])
     s = pd.Series(pd.to_numeric(df["valor"], errors="coerce").values, index=pd.to_datetime(df["fecha"])).dropna()
     texto = " | ".join(str(x) for x in [campo.get("description"), campo.get("title"), dataset.get("title")] if x)
-    return {"id": id_api, "texto": texto, "freq": FREQ.get(campo.get("frequency")), "s": s}
+    return {"id": id_api, "texto": texto, "freq": FREQ.get(campo.get("frequency")), "s": s,
+            "unidad": campo.get("units")}
 
 
 def resolver(spec):
@@ -180,6 +183,8 @@ def main():
             got = resolver(spec)
             if got is not None:
                 s, origen = got["s"], f"API Series de Tiempo, ID {got['id']} ({got['texto'][:120]})"
+                if spec["unidad"] == "Ver descripción" and got.get("unidad"):
+                    spec = {**spec, "unidad": str(got["unidad"])}
         if origen is None and spec.get("calculo"):
             a, op, b = spec["calculo"]
             sa, sb = calculadas.get(a), calculadas.get(b)
