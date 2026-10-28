@@ -37,6 +37,8 @@ Las fuentes listadas en `SOLO_REPO` (`src/almacen.py`) se publican en `datos/` p
 8. **`datos/`:** `src/exportar_archivos.py`. Si una lectura trae menos del 90% de las series que había, no modifica nada.
 9. **Registro:** `src/estado.py` escribe `data/estado_actualizacion.json` y el workflow commitea los datos nuevos.
 
+Un segundo workflow, `.github/workflows/mantener_base.yml`, hace una consulta mínima a la base todos los días: Supabase pausa los proyectos gratuitos tras 7 días sin actividad. Si la base no responde, la actualización se corta con un mensaje claro; en ese caso, restaurar el proyecto desde supabase.com.
+
 Los avisos de cada corrida aparecen en amarillo en el resumen de la ejecución. Además, `data/raw/datos_gob/ESTADO.csv` y `data/raw/internacional/ESTADO.csv` detallan qué pasó con cada serie.
 
 ## Base de datos y página

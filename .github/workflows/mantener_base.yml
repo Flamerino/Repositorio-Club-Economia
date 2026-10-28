@@ -1,0 +1,26 @@
+name: Mantener activa la base
+
+# Supabase pausa los proyectos gratuitos tras 7 días sin actividad. Una consulta mínima diaria lo evita.
+on:
+  schedule:
+    - cron: "0 15 * * *"   # todos los días, 12:00 hora argentina
+  workflow_dispatch:
+
+jobs:
+  consulta:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Consulta mínima a la base
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          URL="${SUPABASE_URL%/}"; URL="${URL%/rest/v1}"
+          AUTH=(-H "apikey: $SUPABASE_SERVICE_KEY")
+          [[ "$SUPABASE_SERVICE_KEY" == eyJ* ]] && AUTH+=(-H "Authorization: Bearer $SUPABASE_SERVICE_KEY")
+          code=$(curl -s -o /dev/null -w "%{http_code}" "${AUTH[@]}" "$URL/rest/v1/series?select=id&limit=1")
+          echo "Respuesta de la base: $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::La base no respondió (código $code). Revisar en supabase.com si el proyecto está pausado."
+            exit 1
+          fi

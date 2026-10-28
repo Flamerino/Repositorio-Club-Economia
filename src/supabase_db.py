@@ -88,3 +88,16 @@ def leer_serie(serie_id):
 def aviso(msg):
     """Muestra el mensaje como advertencia en el resumen de GitHub Actions."""
     print(f"::warning::{msg}")
+
+
+def verificar():
+    """Corta la corrida con un mensaje claro si la base no responde (p. ej. proyecto pausado)."""
+    base, headers = _config()
+    try:
+        r = requests.get(f"{base}/series", headers=headers, params={"select": "id", "limit": 1}, timeout=30)
+    except requests.RequestException as e:
+        raise SystemExit(f"::error::La base de datos no responde ({type(e).__name__}). Revisar en supabase.com si el "
+                         "proyecto está pausado: los proyectos gratuitos se pausan tras 7 días sin actividad.")
+    if not r.ok:
+        raise SystemExit(f"::error::La base de datos respondió {r.status_code}: {r.text[:200]}. Revisar en "
+                         "supabase.com si el proyecto está pausado o si cambiaron las claves (secrets del repo).")

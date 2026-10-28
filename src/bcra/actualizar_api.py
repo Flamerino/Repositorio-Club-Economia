@@ -16,7 +16,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from supabase_db import aviso, ultima_fecha, upsert  # noqa: E402
+from supabase_db import aviso, ultima_fecha, upsert, verificar  # noqa: E402
 
 API = "https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/{id}"
 RAIZ = Path(__file__).resolve().parents[2]
@@ -56,6 +56,7 @@ def traer(id_api, desde):
 
 
 def main():
+    verificar()
     from almacen import metas
     series = metas("bcra")  # de esta corrida o, si no corrió la carga completa, del índice publicado
     series = series.dropna(subset=["id_api_bcra"])
