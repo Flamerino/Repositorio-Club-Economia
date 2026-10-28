@@ -9,7 +9,7 @@
 | [EMAE desestacionalizado (2004=100)](actividad/emae_desestacionalizado.csv) | Índice | Mensual | 2004-01-01 | 2026-07-01 |
 | [EMAE: Estimador Mensual de Actividad Económica, serie original (2004=100)](actividad/emae_estimador_mensual_de_actividad_economica_serie_original.csv) | Índice | Mensual | 2004-01-01 | 2026-07-01 |
 | [IPI manufacturero, desestacionalizado](actividad/ipi_manufacturero_desestacionalizado.csv) | Índice | Mensual | 2016-01-01 | 2026-08-01 |
-| [ISAC: actividad de la construcción, nivel general](actividad/isac_actividad_de_la_construccion_nivel_general.csv) | Índice | Mensual | 2012-01-01 | 2026-06-01 |
+| [ISAC: actividad de la construcción, nivel general](actividad/isac_actividad_de_la_construccion_nivel_general.csv) | Índice | Mensual | 2012-01-01 | 2026-08-01 |
 | [PIB a precios de 2004, serie original (trimestral)](actividad/pib_a_precios_de_2004_serie_original.csv) | Millones de $ de 2004 | Trimestral | 2004-01-01 | 2026-04-01 |
 
 ## Canastas básicas
@@ -34,7 +34,7 @@
 | Serie | Unidad | Frecuencia | Desde | Hasta |
 |---|---|---|---|---|
 | [Asalariados sin descuento jubilatorio (informalidad)](mercado_de_trabajo/asalariados_sin_descuento_jubilatorio.csv) | % | Trimestral | 2003-04-01 | 2026-04-01 |
-| [Tasa de desocupación (EPH, 31 aglomerados)](mercado_de_trabajo/tasa_de_desocupacion.csv) | % | Trimestral | 2003-01-01 | 2025-10-01 |
+| [Tasa de desocupación (EPH, 31 aglomerados)](mercado_de_trabajo/tasa_de_desocupacion.csv) | % | Trimestral | 2003-01-01 | 2026-04-01 |
 
 ## Pobreza
 
@@ -76,11 +76,11 @@
 
 | Serie | Unidad | Frecuencia | Desde | Hasta |
 |---|---|---|---|---|
-| [Índice de salarios: empleo registrado (oct-2016=100)](salarios_e_ingresos/indice_de_salarios_empleo_registrado.csv) | Índice | Mensual | 2015-10-01 | 2026-07-01 |
-| [Índice de salarios: nivel general (oct-2016=100)](salarios_e_ingresos/indice_de_salarios_nivel_general.csv) | Índice | Mensual | 2016-10-01 | 2026-07-01 |
-| [Índice de salarios: sector privado no registrado (oct-2016=100)](salarios_e_ingresos/indice_de_salarios_sector_privado_no_registrado.csv) | Índice | Mensual | 2016-10-01 | 2026-07-01 |
-| [Índice de salarios: sector privado registrado (oct-2016=100)](salarios_e_ingresos/indice_de_salarios_sector_privado_registrado.csv) | Índice | Mensual | 2015-10-01 | 2026-07-01 |
-| [Índice de salarios: sector público (oct-2016=100)](salarios_e_ingresos/indice_de_salarios_sector_publico.csv) | Índice | Mensual | 2015-10-01 | 2026-07-01 |
+| [Índice de salarios: empleo registrado (oct-2016=100)](salarios_e_ingresos/indice_de_salarios_empleo_registrado.csv) | Índice | Mensual | 2015-10-01 | 2026-08-01 |
+| [Índice de salarios: nivel general (oct-2016=100)](salarios_e_ingresos/indice_de_salarios_nivel_general.csv) | Índice | Mensual | 2016-10-01 | 2026-08-01 |
+| [Índice de salarios: sector privado no registrado (oct-2016=100)](salarios_e_ingresos/indice_de_salarios_sector_privado_no_registrado.csv) | Índice | Mensual | 2016-10-01 | 2026-08-01 |
+| [Índice de salarios: sector privado registrado (oct-2016=100)](salarios_e_ingresos/indice_de_salarios_sector_privado_registrado.csv) | Índice | Mensual | 2015-10-01 | 2026-08-01 |
+| [Índice de salarios: sector público (oct-2016=100)](salarios_e_ingresos/indice_de_salarios_sector_publico.csv) | Índice | Mensual | 2015-10-01 | 2026-08-01 |
 
 ## Sector externo
 
