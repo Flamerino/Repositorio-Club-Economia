@@ -61,7 +61,7 @@ def coincide(spec, texto):
     return ok and not any(norm(k) in t for k in spec.get("kw_not", []))
 
 
-def get(ruta, params, intentos=4):
+def get(ruta, params, intentos=3):
     time.sleep(0.3)  # no saturar la API (los cortes momentáneos dejaban series afuera)
     for intento in range(intentos):
         try:
@@ -73,7 +73,7 @@ def get(ruta, params, intentos=4):
             return r.json()
         if r.status_code == 404:
             return None
-        time.sleep(2 ** (intento + 1))
+        time.sleep(2 * (intento + 1))
     return None
 
 

@@ -85,10 +85,11 @@ def cargar():
         r.raise_for_status()
         anterior = pd.read_csv(DESTINO / "INDICE.csv") if (DESTINO / "INDICE.csv").exists() else pd.DataFrame()
         carpeta_de = dict(zip(anterior.get("id", []), anterior.get("carpeta_origen", [])))
-        for m in r.json():
-            if m["id"] in metas:
-                continue
-            df = pd.DataFrame(leer_serie(m["id"]))
+        from concurrent.futures import ThreadPoolExecutor
+        pendientes = [m for m in r.json() if m["id"] not in metas]
+        with ThreadPoolExecutor(max_workers=8) as ex:  # en paralelo: de a una tardaba varios minutos
+            leidas = list(ex.map(lambda m: pd.DataFrame(leer_serie(m["id"])), pendientes))
+        for m, df in zip(pendientes, leidas):
             if not df.empty:
                 datos[m["id"]] = df[["fecha", "valor"]]
                 metas[m["id"]] = {**{k: m.get(k) for k in COLUMNAS_META},

@@ -35,10 +35,10 @@ def main():
     for script in FUENTES:
         print(f"\n===== {script}", flush=True)
         try:
-            r = subprocess.run([sys.executable, str(RAIZ / script)], cwd=RAIZ, timeout=15 * 60)
+            r = subprocess.run([sys.executable, str(RAIZ / script)], cwd=RAIZ, timeout=8 * 60)
             codigo = r.returncode
         except subprocess.TimeoutExpired:
-            codigo = "tiempo agotado (15 min)"
+            codigo = "tiempo agotado (8 min)"
         if codigo != 0:
             fallas.append(script)
             print(f"::warning::{script} terminó con error ({codigo}); se mantienen sus datos anteriores.")

@@ -73,16 +73,24 @@ def aviso(fuente, msg):
     print(f"::warning::{fuente}: {msg}")
 
 
-def get(url, **kw):
-    for intento in range(3):
+def get(url, intentos=2, timeout=30, **kw):
+    for intento in range(intentos):
         try:
-            r = sesion.get(url, timeout=60, **kw)
+            r = sesion.get(url, timeout=timeout, **kw)
             if r.ok:
                 return r
         except requests.RequestException:
             pass
-        time.sleep(2 ** (intento + 1))
+        time.sleep(2 * (intento + 1))
     return None
+
+
+def responde(fuente, url, **kw):
+    """Un solo intento corto: si la API no contesta, se saltea la fuente entera en vez de esperar serie por serie."""
+    if get(url, intentos=1, timeout=20, **kw) is None:
+        aviso(fuente, "la API no respondió a tiempo; se conservan los datos anteriores")
+        return False
+    return True
 
 
 def registrar(fuente, n):
@@ -91,6 +99,8 @@ def registrar(fuente, n):
 
 def fred():
     out = {}
+    if not responde("FRED", "https://fred.stlouisfed.org/graph/fredgraph.csv", params={"id": "FEDFUNDS"}):
+        return out
     for codigo, (sid, nombre, unidad, cat, (lo, hi)) in FRED.items():
         r = get("https://fred.stlouisfed.org/graph/fredgraph.csv", params={"id": codigo})
         if r is None:
@@ -113,6 +123,9 @@ def fred():
 
 def bcb():
     out = {}
+    if not responde("Banco Central de Brasil", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados/ultimos/1",
+                    params={"formato": "json"}):
+        return out
     for codigo, (sid, nombre, unidad, freq, (lo, hi)) in BCB.items():
         r = get(f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados", params={"formato": "json"})
         try:
@@ -133,6 +146,8 @@ def bcb():
 
 def fmi():
     out = {}
+    if not responde("FMI", "https://www.imf.org/external/datamapper/api/v1/NGDP_RPCH/ARG"):
+        return out
     anio = date.today().year
     for ind, (slug, nombre, unidad) in FMI_IND.items():
         r = get(f"https://www.imf.org/external/datamapper/api/v1/{ind}/{'/'.join(PAISES)}")
