@@ -4,22 +4,24 @@
 Fuentes (APIs y archivos)
    │  src/<fuente>/…            descarga, validación, limpieza
    ▼
-data/raw/        originales      data/processed/<fuente>/  series.csv + observaciones.csv
+data/raw/ (originales)     data/processed/<fuente>/  (área de trabajo de la corrida, no se versiona)
                                         │
-                     ┌──────────────────┼──────────────────────┐
+                     ┌──────────────────┴──────────────────────┐
                      ▼                                         ▼
           src/cargar_supabase.py                    src/exportar_archivos.py
                      ▼                                         ▼
-          Supabase (base de datos) ──► app/ (página)     datos/ (un CSV por serie)
+          Supabase (base de datos) ──► app/ (página)     datos/ (un CSV por serie, versionado)
 ```
 
 ## Carpetas de datos
 
 - **`data/raw/`**: archivos tal como los publica cada fuente (Excel del BCRA y del INDEC, microdatos de la EPH, canastas, etc.).
-- **`data/processed/<fuente>/`**: series limpias en formato largo. `series.csv` tiene una fila por serie (id, nombre, fuente, categoría, unidad, frecuencia, descripción) y `observaciones.csv` una fila por dato (`serie_id, fecha, valor`).
-- **`datos/`**: una serie por archivo, generada por `src/exportar_archivos.py` en cada corrida. No se edita a mano.
+- **`datos/`**: la versión publicada de cada serie, un archivo por serie, generada por `src/exportar_archivos.py` en cada corrida. `datos/INDICE.csv` es el catálogo: nombre, fuente, unidad, frecuencia, período, descripción, origen exacto y si se muestra en la página. No se edita a mano.
+- **`data/processed/<fuente>/`**: área de trabajo interna. Durante la corrida, cada script deja ahí sus series en formato largo (`series.csv` y `observaciones.csv`), que es el formato que usan la base y el exportador. No se versiona.
 
-Las carpetas de `data/processed/` que contienen un archivo `.solo_repo` se publican en `datos/` pero no se suben a la base ni aparecen en la página. Para mostrarlas en la página, se borra ese archivo.
+Cuando un script necesita datos ya publicados (para validar contra la historia o conservar una serie si su fuente falla), los lee con `src/almacen.py`: primero lo que produjo la corrida y, si no está, la versión de `datos/`. El exportador conserva las series que no se actualizaron en una corrida, así ninguna desaparece porque su fuente falle una semana.
+
+Las fuentes listadas en `SOLO_REPO` (`src/almacen.py`) se publican en `datos/` pero no se suben a la base ni aparecen en la página. Para mostrar una en la página, se la saca de esa lista.
 
 ## Actualización semanal
 
@@ -69,5 +71,6 @@ DATOS_LOCALES=1 streamlit run app/app.py   # sin conexión, con los CSV de data/
 | `banco_mundial/actualizar.py`, `internacional/actualizar.py` | Contexto internacional |
 | `derivadas/calcular.py` | Series de elaboración propia |
 | `actualizar_solo_repo.py` | Orquesta las fuentes que no van a la página |
+| `almacen.py` | Lectura de series ya publicadas; lista de fuentes que no van a la página |
 | `supabase_db.py`, `cargar_supabase.py` | Conexión y carga a la base |
 | `exportar_archivos.py`, `estado.py` | Carpeta `datos/` y registro de la corrida |

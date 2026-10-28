@@ -1,8 +1,8 @@
 archivo,serie,unidad,frecuencia,desde,hasta,fuente,advertencia
-dolar_oficial.csv,Dólar oficial minorista (Banco Nación): compra y venta,$ por USD,Diaria (días hábiles),2011-01-03,2026-10-19,ArgentinaDatos (no oficial),
-dolar_mayorista.csv,Dólar mayorista: compra y venta,$ por USD,Diaria (días hábiles),2011-01-03,2026-10-19,ArgentinaDatos (no oficial),
-dolar_blue.csv,Dólar blue (informal): compra y venta,$ por USD,Diaria (días hábiles),2011-01-03,2026-10-19,ArgentinaDatos (no oficial),Valores en pesos enteros: antes de 2020 el redondeo pesa 5-25% del precio.
-dolar_mep.csv,Dólar MEP (bolsa): compra y venta,$ por USD,Diaria (días hábiles),2018-10-29,2026-10-19,ArgentinaDatos (no oficial),
-dolar_ccl.csv,Dólar contado con liquidación: compra y venta,$ por USD,Diaria (días hábiles),2013-01-02,2026-10-19,ArgentinaDatos (no oficial),
-riesgo_pais.csv,Riesgo país (EMBI Argentina),Puntos básicos,Diaria (días hábiles),1999-01-22,2026-10-16,ArgentinaDatos (no oficial),
-brechas.csv,"Brechas MEP, CCL y blue contra el mayorista",%,Diaria,2013-01-02,2026-10-19,Cálculo propio con datos de ArgentinaDatos,La brecha blue empieza cuando el blue superó $50 (redondeo de la fuente).
+dolar_oficial.csv,Dólar oficial minorista (Banco Nación): compra y venta,$ por USD,Diaria (días hábiles),2011-01-03,2026-10-28,ArgentinaDatos (no oficial),
+dolar_mayorista.csv,Dólar mayorista: compra y venta,$ por USD,Diaria (días hábiles),2011-01-03,2026-10-28,ArgentinaDatos (no oficial),
+dolar_blue.csv,Dólar blue (informal): compra y venta,$ por USD,Diaria (días hábiles),2011-01-03,2026-10-28,ArgentinaDatos (no oficial),Valores en pesos enteros: antes de 2020 el redondeo pesa 5-25% del precio.
+dolar_mep.csv,Dólar MEP (bolsa): compra y venta,$ por USD,Diaria (días hábiles),2018-10-29,2026-10-28,ArgentinaDatos (no oficial),
+dolar_ccl.csv,Dólar contado con liquidación: compra y venta,$ por USD,Diaria (días hábiles),2013-01-02,2026-10-28,ArgentinaDatos (no oficial),
+riesgo_pais.csv,Riesgo país (EMBI Argentina),Puntos básicos,Diaria (días hábiles),1999-01-22,2026-10-27,ArgentinaDatos (no oficial),
+brechas.csv,"Brechas MEP, CCL y blue contra el mayorista",%,Diaria,2013-01-02,2026-10-28,Cálculo propio con datos de ArgentinaDatos,La brecha blue empieza cuando el blue superó $50 (redondeo de la fuente).

@@ -5,7 +5,7 @@ cotizaciones de fuentes públicas. Se usa porque no hay fuente oficial para MEP,
 Control: su dólar mayorista tiene que coincidir con el tipo de cambio A3500 del BCRA
 (bcra_api_84); históricamente la diferencia mediana es 0,08%. Si no coincide, no se guarda nada.
 
-Guarda en data/processed/mercados/ (solo repo, no se sube a la base).
+Se publica en datos/ (no se sube a la base).
 Uso: python src/mercados/actualizar.py
 """
 import os
@@ -56,11 +56,11 @@ def tc_bcra():
         from supabase_db import leer_serie
         df = pd.DataFrame(leer_serie("bcra_api_84"))
     else:
-        archivo = RAIZ / "data" / "processed" / "bcra" / "observaciones.csv"
-        if not archivo.exists():
+        sys.path.insert(0, str(RAIZ / "src"))
+        from almacen import serie
+        df = serie("bcra_api_84")
+        if df is None:
             return None
-        o = pd.read_csv(archivo)
-        df = o[o["serie_id"] == "bcra_api_84"]
     return pd.Series(df["valor"].values, index=pd.to_datetime(df["fecha"])) if len(df) else None
 
 

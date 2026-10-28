@@ -16,8 +16,7 @@ CLAVE_DEFECTO = "sb_publishable_pOxPr87EoSaByshuFYf-aw_wkESBC5x"
 PAGINA = 1000  # Supabase devuelve como máximo 1000 filas por consulta
 CACHE = 6 * 60 * 60
 RAIZ = Path(__file__).resolve().parents[1]
-LOCAL = os.environ.get("DATOS_LOCALES") == "1"  # desarrollo sin conexión: lee data/processed/
-# las carpetas con un archivo .solo_repo no se muestran en la página
+LOCAL = os.environ.get("DATOS_LOCALES") == "1"  # desarrollo sin conexión: lee las series de datos/
 
 
 def _config():
@@ -56,18 +55,28 @@ def nombre_corto(nombre):
 @st.cache_data(ttl=CACHE, show_spinner=False)
 def series():
     if LOCAL:
-        df = pd.concat(pd.read_csv(p) for p in (RAIZ / "data" / "processed").glob("*/series.csv")
-                       if not (p.parent / ".solo_repo").exists())
+        ind = _indice_local()
+        df = pd.DataFrame({"id": ind["id"], "nombre": ind["serie"], "fuente": ind["fuente"],
+                           "categoria": ind["tema"], "unidad": ind["unidad"],
+                           "frecuencia": ind["frecuencia"].map({"Diaria": "D", "Mensual": "M", "Trimestral": "T",
+                                                                "Semestral": "S", "Anual": "A"}),
+                           "id_api_bcra": pd.to_numeric(ind["id_api_bcra"], errors="coerce"),
+                           "descripcion": ind["descripcion"]})
     else:
         df = pd.DataFrame(_consultar("series", {"select": "*", "order": "id"}))
     df["nombre_corto"] = df["nombre"].map(nombre_corto)
     return df.set_index("id")
 
 
+def _indice_local():
+    ind = pd.read_csv(RAIZ / "datos" / "INDICE.csv")
+    return ind[ind["en_la_pagina"] == "sí"]  # las fuentes solo del repo no se muestran en la página
+
+
 @st.cache_data(show_spinner=False)
 def _observaciones_locales():
-    return pd.concat(pd.read_csv(p) for p in (RAIZ / "data" / "processed").glob("*/observaciones.csv")
-                     if not (p.parent / ".solo_repo").exists())
+    ind = _indice_local()
+    return pd.concat(pd.read_csv(RAIZ / "datos" / a).assign(serie_id=i) for i, a in zip(ind["id"], ind["archivo"]))
 
 
 def _a_serie(df, serie_id):

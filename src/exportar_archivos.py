@@ -1,12 +1,9 @@
-"""Exporta TODAS las series del repo a datos/, un archivo CSV por serie (fecha, valor),
-organizadas por fuente y tema, con un índice general y un README por carpeta.
+"""Publica TODAS las series en datos/, un archivo CSV por serie (fecha, valor), organizadas por
+fuente y tema, con un índice general (datos/INDICE.csv) y un README por carpeta.
 
-Fuente de cada serie:
-  - carpetas de data/processed/ que van a la base: de Supabase si hay credenciales (lo más
-    actualizado, incluye lo que llega por API), si no del CSV local;
-  - carpetas marcadas .solo_repo: siempre del CSV local.
-Cualquier fuente nueva que escriba data/processed/<fuente>/series.csv + observaciones.csv
-aparece sola en datos/.
+datos/ es la única copia versionada de las series: data/processed/ es un área de trabajo interna.
+Cualquier fuente nueva que escriba data/processed/<fuente>/series.csv + observaciones.csv durante la
+corrida aparece sola en datos/.
 
 Uso: python src/exportar_archivos.py
 """
@@ -53,33 +50,72 @@ def nombre_corto(nombre):
 
 
 def cargar():
+    """Junta las series de tres orígenes, en este orden de prioridad:
+    1. lo que produjo esta corrida en data/processed/<fuente>/;
+    2. la base de datos (fuentes que van a la página), si hay credenciales: incluye lo que llegó por API;
+    3. la versión ya publicada en datos/, para las series que no se actualizaron en esta corrida.
+    """
     usa_base = bool(os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_SERVICE_KEY"))
+    sys.path.insert(0, str(RAIZ / "src"))
+    from almacen import COLUMNAS_META, FREQ_CODIGO, SOLO_REPO
     if usa_base:
-        sys.path.insert(0, str(RAIZ / "src"))
-        from supabase_db import leer_serie
-    metas, datos = [], {}
+        from supabase_db import _config, leer_serie
+    metas, datos = {}, {}
+
+    # 1 y 2: fuentes con archivos de esta corrida
     for carpeta in sorted(p.parent for p in PROCESSED.glob("*/series.csv")):
         series = pd.read_csv(carpeta / "series.csv")
-        solo_repo = (carpeta / ".solo_repo").exists()
-        local = None
+        local = {}
         if (carpeta / "observaciones.csv").exists():
             local = {k: g for k, g in pd.read_csv(carpeta / "observaciones.csv").groupby("serie_id")}
         for _, m in series.iterrows():
-            if usa_base and not solo_repo:
+            if usa_base and carpeta.name not in SOLO_REPO:
                 df = pd.DataFrame(leer_serie(m["id"]))
-            elif local is not None and m["id"] in local:
-                df = local[m["id"]]
             else:
+                df = local.get(m["id"], pd.DataFrame())
+            if not df.empty:
+                datos[m["id"]] = df[["fecha", "valor"]]
+                metas[m["id"]] = {**{k: m.get(k) for k in COLUMNAS_META}, "carpeta_origen": carpeta.name}
+
+    # 2: el resto de la base (p. ej. el BCRA, que en las corridas semanales llega solo por API)
+    if usa_base:
+        import requests
+        base, headers = _config()
+        r = requests.get(f"{base}/series", headers=headers, params={"select": "*"}, timeout=60)
+        r.raise_for_status()
+        anterior = pd.read_csv(DESTINO / "INDICE.csv") if (DESTINO / "INDICE.csv").exists() else pd.DataFrame()
+        carpeta_de = dict(zip(anterior.get("id", []), anterior.get("carpeta_origen", [])))
+        for m in r.json():
+            if m["id"] in metas:
                 continue
-            if df.empty:
+            df = pd.DataFrame(leer_serie(m["id"]))
+            if not df.empty:
+                datos[m["id"]] = df[["fecha", "valor"]]
+                metas[m["id"]] = {**{k: m.get(k) for k in COLUMNAS_META},
+                                  "carpeta_origen": carpeta_de.get(m["id"], "base")}
+
+    # 3: series publicadas que no se actualizaron en esta corrida (su fuente falló o no corrió)
+    conservadas = 0
+    if (DESTINO / "INDICE.csv").exists():
+        anterior = pd.read_csv(DESTINO / "INDICE.csv")
+        for _, f in anterior.iterrows():
+            if f["id"] in metas or not (DESTINO / f["archivo"]).exists():
                 continue
-            datos[m["id"]] = df[["fecha", "valor"]].sort_values("fecha").drop_duplicates("fecha", keep="last")
-            metas.append({**m.to_dict(), "carpeta_origen": carpeta.name})
-    print(f"{len(metas)} series ({'Supabase + repo' if usa_base else 'CSV locales'})")
-    return pd.DataFrame(metas), datos
+            datos[f["id"]] = pd.read_csv(DESTINO / f["archivo"])
+            metas[f["id"]] = {"id": f["id"], "nombre": f["serie"], "fuente": f["fuente"], "categoria": f["tema"],
+                              "unidad": f["unidad"], "frecuencia": FREQ_CODIGO.get(f["frecuencia"], f["frecuencia"]),
+                              "id_api_bcra": f.get("id_api_bcra"), "archivo_origen": f.get("archivo_origen"),
+                              "descripcion": f.get("descripcion"), "carpeta_origen": f.get("carpeta_origen", "base")}
+            conservadas += 1
+    for sid in datos:
+        datos[sid] = datos[sid].sort_values("fecha").drop_duplicates("fecha", keep="last")
+    print(f"{len(metas)} series ({'base + corrida' if usa_base else 'archivos locales'}; "
+          f"{conservadas} conservadas de la versión publicada)")
+    return pd.DataFrame(list(metas.values())), datos
 
 
 def main():
+    from almacen import SOLO_REPO
     metas, datos = cargar()
     if metas.empty:
         print("::warning::No hay series para exportar; no se modifica datos/.")
@@ -107,9 +143,12 @@ def main():
                        "tema": m.get("categoria"), "unidad": m.get("unidad"),
                        "frecuencia": FRECUENCIAS.get(m.get("frecuencia"), m.get("frecuencia")),
                        "desde": str(df["fecha"].iloc[0])[:10], "hasta": str(df["fecha"].iloc[-1])[:10],
-                       "datos": len(df), "id": m["id"], "en_la_pagina": "no" if m["carpeta_origen"] in
-                       {p.parent.name for p in PROCESSED.glob("*/.solo_repo")} else "sí",
-                       "descripcion": m.get("descripcion") if isinstance(m.get("descripcion"), str) else ""})
+                       "datos": len(df), "id": m["id"],
+                       "en_la_pagina": "no" if m["carpeta_origen"] in SOLO_REPO else "sí",
+                       "descripcion": m.get("descripcion") if isinstance(m.get("descripcion"), str) else "",
+                       "carpeta_origen": m["carpeta_origen"],
+                       "id_api_bcra": m.get("id_api_bcra") if pd.notna(m.get("id_api_bcra")) else "",
+                       "archivo_origen": m.get("archivo_origen") if isinstance(m.get("archivo_origen"), str) else ""})
     ind = pd.DataFrame(indice)
     ind.to_csv(DESTINO / "INDICE.csv", index=False)
 

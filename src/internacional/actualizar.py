@@ -2,8 +2,8 @@
 Proyecto Maddison. Cada fuente se valida por separado; si una falla, se conservan sus datos
 anteriores y las demás siguen.
 
-Guarda en data/processed/internacional/ (formato largo) y data/raw/internacional/ (un CSV por
-serie). Solo repo. Uso: python src/internacional/actualizar.py
+Se publica en datos/ (no se sube a la base); el reporte de cada corrida queda en
+data/raw/internacional/ESTADO.csv. Uso: python src/internacional/actualizar.py
 """
 import hashlib
 import io
@@ -15,6 +15,8 @@ import pandas as pd
 import requests
 
 RAIZ = Path(__file__).resolve().parents[2]
+import sys  # noqa: E402
+sys.path.insert(0, str(RAIZ / "src"))
 SALIDA = RAIZ / "data" / "processed" / "internacional"
 RAW = RAIZ / "data" / "raw" / "internacional"
 sesion = requests.Session()
@@ -150,10 +152,10 @@ def fmi():
                 f"Indicador {ind} del World Economic Outlook del FMI (DataMapper). Los valores desde {anio} en "
                 "adelante son estimaciones y proyecciones del FMI.")
     # control: crecimiento de Argentina contra el Banco Mundial (años ya cerrados)
-    bm = RAIZ / "data" / "processed" / "banco_mundial" / "observaciones.csv"
-    if "fmi_crecimiento_pib_arg" in out and bm.exists():
-        o = pd.read_csv(bm, parse_dates=["fecha"])
-        ref = o[o["serie_id"] == "bm_crecimiento_pib_arg"].set_index("fecha")["valor"]
+    from almacen import serie
+    bm = serie("bm_crecimiento_pib_arg")
+    if "fmi_crecimiento_pib_arg" in out and bm is not None:
+        ref = pd.Series(bm["valor"].values, index=pd.to_datetime(bm["fecha"]))
         f = out["fmi_crecimiento_pib_arg"][0]
         comunes = [x for x in ref.index.intersection(f.index) if x.year < anio - 1]
         dif = (f[comunes] - ref[comunes]).abs().median() if comunes else None
@@ -197,11 +199,9 @@ def maddison():
 
 
 def main():
-    previas = {}
-    if (SALIDA / "observaciones.csv").exists():
-        o = pd.read_csv(SALIDA / "observaciones.csv")
-        m = pd.read_csv(SALIDA / "series.csv").set_index("id")
-        previas = {k: (g, m.loc[k]) for k, g in o.groupby("serie_id") if k in m.index}
+    from almacen import metas as metas_publicadas, observaciones
+    o, m = observaciones("internacional"), metas_publicadas("internacional").set_index("id")
+    previas = {k: (g, m.loc[k]) for k, g in o.groupby("serie_id") if k in m.index}
     todas = {}
     for fuente, prefijo in [(fred, "fred_"), (bcb, "bcb_"), (fmi, "fmi_"), (maddison, "maddison_")]:
         nuevas = fuente()

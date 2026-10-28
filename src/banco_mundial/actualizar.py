@@ -5,7 +5,7 @@ de Argentina tiene que coincidir con el archivo del Banco Mundial guardado en
 data/raw/banco_mundial/ (años en común, sin los dos últimos, que se revisan). Si no coincide,
 no se guarda nada.
 
-Guarda en data/processed/banco_mundial/ (solo repo, no se sube a la base).
+Se publica en datos/ (no se sube a la base).
 Uso: python src/banco_mundial/actualizar.py
 """
 import re

@@ -18,10 +18,10 @@ No hace falta tocar nada más: se descarga, se valida y aparece en `datos/` en l
 
 ## Sumar una fuente nueva
 
-1. Crear `src/<fuente>/actualizar.py`, que escriba `data/processed/<fuente>/series.csv` y `observaciones.csv` con las mismas columnas que el resto.
+1. Crear `src/<fuente>/actualizar.py`, que escriba `data/processed/<fuente>/series.csv` y `observaciones.csv` con las mismas columnas que el resto. Es el área de trabajo de la corrida: el exportador las publica en `datos/`, un archivo por serie. Para leer series ya publicadas, usar `src/almacen.py`.
 2. **Validar antes de guardar:** comparar contra un dato conocido (otra fuente oficial, una cifra publicada o la historia ya guardada). Si no coincide, no escribir nada y emitir un aviso (`print("::warning::…")`).
-3. Crear `data/processed/<fuente>/.solo_repo` mientras no se quiera mostrar en la página.
-4. Agregar el script a `FUENTES` en [`src/actualizar_solo_repo.py`](src/actualizar_solo_repo.py), con las carpetas que escribe.
+3. Agregar `<fuente>` a `SOLO_REPO` en [`src/almacen.py`](src/almacen.py) mientras no se quiera mostrar en la página.
+4. Agregar el script a `FUENTES` en [`src/actualizar_solo_repo.py`](src/actualizar_solo_repo.py), con las carpetas de `data/raw/` que escribe.
 5. Documentar la fuente en [`docs/FUENTES.md`](docs/FUENTES.md) y, si es un cálculo propio, en [`docs/METODOLOGIA.md`](docs/METODOLOGIA.md).
 
 ## Convenciones

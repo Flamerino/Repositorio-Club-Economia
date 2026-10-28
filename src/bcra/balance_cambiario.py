@@ -8,7 +8,7 @@ Cada semana intenta bajar la versión nueva del sitio del BCRA; la usa solo si c
 del archivo anterior (meses de más de 6 meses de antigüedad, diferencia mediana < 1%). Si no puede,
 procesa el archivo que ya está en el repo.
 
-Guarda en data/processed/balance_cambiario/ (solo repo). Uso: python src/bcra/balance_cambiario.py
+Se publica en datos/ (no se sube a la base). Uso: python src/bcra/balance_cambiario.py
 """
 import datetime as dt
 import io

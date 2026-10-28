@@ -6,7 +6,7 @@ promedio de la variable `icg` (0 a 5) ponderado por `ponderacion_utdt`, por ola 
 el índice general, sus cinco componentes y el índice por zona, sexo, edad y educación.
 
 Controles: valores entre 0 y 5; la historia ya guardada no puede cambiar más de 0,05 puntos.
-Guarda en data/processed/opinion/ (solo repo). Uso: python src/opinion/actualizar.py
+Se publica en datos/ (no se sube a la base). Uso: python src/opinion/actualizar.py
 """
 import io
 from pathlib import Path
@@ -75,10 +75,12 @@ def main():
                 s, f"ICG por {nombre_seg}: {mostrar}", f"ICG de los encuestados con {nombre_seg}: {mostrar}.",
                 "ICG por segmento")
 
-    previo = SALIDA / "observaciones.csv"
-    if previo.exists():
-        o = pd.read_csv(previo, parse_dates=["fecha"])
-        viejo = o[o["serie_id"] == "utdt_icg"].set_index("fecha")["valor"]
+    import sys
+    sys.path.insert(0, str(RAIZ / "src"))
+    from almacen import serie
+    previo = serie("utdt_icg")
+    if previo is not None:
+        viejo = pd.Series(previo["valor"].values, index=pd.to_datetime(previo["fecha"]))
         nuevo = series["utdt_icg"][0]
         comunes = viejo.index.intersection(nuevo.index)
         if len(comunes) and (nuevo[comunes] - viejo[comunes]).abs().max() > TOLERANCIA:

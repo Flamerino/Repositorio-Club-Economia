@@ -1,4 +1,4 @@
-"""Trae las series de src/datos_gob/catalogo.py y las guarda en data/processed/datos_gob/.
+"""Trae las series de src/datos_gob/catalogo.py; se publican en datos/ (no se suben a la base).
 
 No se cargan en Supabase ni se muestran en la página (cargar_supabase.py las excluye por defecto).
 
@@ -160,10 +160,11 @@ def historia_cambio(nueva, anterior):
 
 
 def main():
-    previas = {}
-    if (SALIDA / "observaciones.csv").exists():
-        o = pd.read_csv(SALIDA / "observaciones.csv", parse_dates=["fecha"])
-        previas = {k: g.set_index("fecha")["valor"] for k, g in o.groupby("serie_id")}
+    sys.path.insert(0, str(RAIZ / "src"))
+    from almacen import observaciones
+    o = observaciones("datos_gob")
+    o["fecha"] = pd.to_datetime(o["fecha"])
+    previas = {k: g.set_index("fecha")["valor"] for k, g in o.groupby("serie_id")}
     # chequeo rápido: si la API no responde, no tiene sentido recorrer las 30 series
     if get("series/", {"ids": "143.3_NO_PR_2004_A_21", "limit": 1, "format": "json"}, intentos=2) is None:
         aviso("datos.gob.ar no responde; se mantienen los datos anteriores.")
@@ -251,7 +252,7 @@ def main():
                        "frecuencia": m["frecuencia"], "desde": o["fecha"].min(), "hasta": o["fecha"].max(),
                        "fuente": m["fuente"], "detalle": m["descripcion"]})
     pd.DataFrame(indice).to_csv(RAW / "INDICE.csv", index=False)
-    print(f"-> {ok} de {len(SERIES)} series guardadas en data/processed/datos_gob/")
+    print(f"-> {ok} de {len(SERIES)} series")
 
 
 if __name__ == "__main__":

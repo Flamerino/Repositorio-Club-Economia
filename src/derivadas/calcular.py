@@ -1,7 +1,7 @@
 """Series sintéticas (elaboración propia) calculadas a partir de las series de la base.
 
 Lee los datos de Supabase si hay credenciales (SUPABASE_URL / SUPABASE_SERVICE_KEY),
-o de data/processed/ si no las hay. Genera data/processed/derivadas/.
+o de los archivos del repo si no las hay. Genera data/processed/derivadas/.
 
 Uso: python src/derivadas/calcular.py
 """
@@ -30,10 +30,11 @@ def serie(sid):
         filas = leer_serie(sid)
         df = pd.DataFrame(filas)
     else:
-        if _local is None:
-            _local = pd.concat(pd.read_csv(p) for p in (RAIZ / "data" / "processed").glob("*/observaciones.csv")
-                               if p.parent.name != "derivadas")
-        df = _local[_local["serie_id"] == sid]
+        sys.path.insert(0, str(RAIZ / "src"))
+        from almacen import serie as serie_publicada
+        df = serie_publicada(sid)
+        if df is None:
+            df = pd.DataFrame()
     if df.empty:
         raise ValueError(f"No hay datos para {sid}")
     return pd.Series(df["valor"].astype(float).values, index=pd.to_datetime(df["fecha"]), name=sid).sort_index()

@@ -4,7 +4,7 @@ Ingreso per cápita familiar (IPCF) = ingreso total familiar / miembros del hoga
 por PONDIH (excluye hogares sin respuesta de ingresos). Replica las cifras oficiales del INDEC:
 Gini 0,467 (1T-2024), 0,436 (2T-2024), 0,424 (2T-2025); ingreso per cápita promedio $537.024 (2T-2025).
 
-Usa la base de la EPH que arma src/indec/pobreza.py. Guarda en data/processed/distribucion/ (solo repo).
+Usa la base de la EPH que arma src/indec/pobreza.py. Se publica en datos/ (no se sube a la base).
 Uso: python src/indec/distribucion.py
 """
 import sys

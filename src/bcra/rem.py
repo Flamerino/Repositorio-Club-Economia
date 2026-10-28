@@ -6,7 +6,7 @@ documentada también en github.com/ncachanosky/argentina-economic-monitor.
 
 Cada serie se fecha por el mes de la encuesta (cierra a fin de mes y se publica a comienzos del
 siguiente). Controles: al menos 60 encuestas y valores dentro de rangos posibles; si no, se conservan
-los datos anteriores. Guarda en data/processed/rem/ (solo repo). Uso: python src/bcra/rem.py
+los datos anteriores. Se publica en datos/ (no se sube a la base). Uso: python src/bcra/rem.py
 """
 import io
 import re

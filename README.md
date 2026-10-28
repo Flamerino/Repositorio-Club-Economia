@@ -47,7 +47,6 @@ Un workflow de GitHub Actions corre todos los lunes: descarga los datos nuevos, 
 ```
 datos/          Una serie por archivo, lista para usar (se genera automáticamente)
 data/raw/       Archivos originales, tal como los publica cada fuente
-data/processed/ Series limpias en formato largo, insumo de la base de datos
 src/            Código: descarga, validación, limpieza y cálculo de cada fuente
 app/            Página web (Streamlit)
 db/             Esquema de la base de datos (Supabase)

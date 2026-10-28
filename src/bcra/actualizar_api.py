@@ -56,7 +56,8 @@ def traer(id_api, desde):
 
 
 def main():
-    series = pd.read_csv(RAIZ / "data" / "processed" / "bcra" / "series.csv")
+    from almacen import metas
+    series = metas("bcra")  # de esta corrida o, si no corrió la carga completa, del índice publicado
     series = series.dropna(subset=["id_api_bcra"])
     total, sin_api, errores = 0, [], []
 
