@@ -1,6 +1,6 @@
 # INDEC
 
-52 series.
+54 series.
 
 ## Actividad
 
@@ -17,13 +17,13 @@
 | Serie | Unidad | Frecuencia | Desde | Hasta |
 |---|---|---|---|---|
 | [Canasta Básica Alimentaria por adulto equivalente, Cuyo](canastas_basicas/canasta_basica_alimentaria_por_adulto_equivalente_cuyo.csv) | $ | Mensual | 2016-04-01 | 2025-12-01 |
-| [Canasta Básica Alimentaria por adulto equivalente, GBA](canastas_basicas/canasta_basica_alimentaria_por_adulto_equivalente_gba.csv) | $ | Mensual | 2016-04-01 | 2025-12-01 |
+| [Canasta Básica Alimentaria por adulto equivalente, GBA](canastas_basicas/canasta_basica_alimentaria_por_adulto_equivalente_gba.csv) | $ | Mensual | 2016-04-01 | 2026-09-01 |
 | [Canasta Básica Alimentaria por adulto equivalente, Noreste](canastas_basicas/canasta_basica_alimentaria_por_adulto_equivalente_noreste.csv) | $ | Mensual | 2016-04-01 | 2025-12-01 |
 | [Canasta Básica Alimentaria por adulto equivalente, Noroeste](canastas_basicas/canasta_basica_alimentaria_por_adulto_equivalente_noroeste.csv) | $ | Mensual | 2016-04-01 | 2025-12-01 |
 | [Canasta Básica Alimentaria por adulto equivalente, Pampeana](canastas_basicas/canasta_basica_alimentaria_por_adulto_equivalente_pampeana.csv) | $ | Mensual | 2016-04-01 | 2025-12-01 |
 | [Canasta Básica Alimentaria por adulto equivalente, Patagonia](canastas_basicas/canasta_basica_alimentaria_por_adulto_equivalente_patagonia.csv) | $ | Mensual | 2016-04-01 | 2025-12-01 |
 | [Canasta Básica Total por adulto equivalente, Cuyo](canastas_basicas/canasta_basica_total_por_adulto_equivalente_cuyo.csv) | $ | Mensual | 2016-04-01 | 2025-12-01 |
-| [Canasta Básica Total por adulto equivalente, GBA](canastas_basicas/canasta_basica_total_por_adulto_equivalente_gba.csv) | $ | Mensual | 2016-04-01 | 2025-12-01 |
+| [Canasta Básica Total por adulto equivalente, GBA](canastas_basicas/canasta_basica_total_por_adulto_equivalente_gba.csv) | $ | Mensual | 2016-04-01 | 2026-09-01 |
 | [Canasta Básica Total por adulto equivalente, Noreste](canastas_basicas/canasta_basica_total_por_adulto_equivalente_noreste.csv) | $ | Mensual | 2016-04-01 | 2025-12-01 |
 | [Canasta Básica Total por adulto equivalente, Noroeste](canastas_basicas/canasta_basica_total_por_adulto_equivalente_noroeste.csv) | $ | Mensual | 2016-04-01 | 2025-12-01 |
 | [Canasta Básica Total por adulto equivalente, Pampeana](canastas_basicas/canasta_basica_total_por_adulto_equivalente_pampeana.csv) | $ | Mensual | 2016-04-01 | 2025-12-01 |
@@ -88,4 +88,6 @@
 |---|---|---|---|---|
 | [Exportaciones de bienes (ICA)](sector_externo/exportaciones_de_bienes.csv) | Millones de USD | Mensual | 1992-01-01 | 2026-08-01 |
 | [Importaciones de bienes (ICA)](sector_externo/importaciones_de_bienes.csv) | Millones de USD | Mensual | 1992-01-01 | 2026-08-01 |
+| [Inversión directa neta (cuenta financiera de la balanza de pagos)](sector_externo/inversion_directa_neta.csv) | Millones de USD | Trimestral | 2006-01-01 | 2026-04-01 |
+| [Índice de términos del intercambio](sector_externo/indice_de_terminos_del_intercambio.csv) | Índice | Trimestral | 1990-01-01 | 2026-04-01 |
 
