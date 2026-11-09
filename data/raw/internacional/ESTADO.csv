@@ -1,6 +1,5 @@
 fuente,estado,detalle
 FRED,AVISO,la API no respondió a tiempo; se conservan los datos anteriores
-Banco Central de Brasil,AVISO,no se pudo leer la serie SGS 433
-Banco Central de Brasil,OK,3 series
+Banco Central de Brasil,OK,4 series
 FMI,AVISO,la API no respondió a tiempo; se conservan los datos anteriores
-Proyecto Maddison,AVISO,no se pudo descargar el archivo oficial (o no coincide su huella SHA-256)
+Proyecto Maddison,OK,10 series
