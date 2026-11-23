@@ -1,6 +1,6 @@
 # Datos del Club de Economía UADE
 
-**594 series** y **929.534 datos**, un archivo CSV por serie (`fecha, valor`), listos para abrir en Excel o Google Sheets. Se actualizan solos todas las semanas.
+**594 series** y **930.056 datos**, un archivo CSV por serie (`fecha, valor`), listos para abrir en Excel o Google Sheets. Se actualizan solos todas las semanas.
 
 El detalle de cada serie (unidad, período, fuente y cómo se construye) está en [`INDICE.csv`](INDICE.csv). De dónde sale cada fuente y cómo se valida: [`docs/FUENTES.md`](../docs/FUENTES.md). Cómo se calculan las series propias: [`docs/METODOLOGIA.md`](../docs/METODOLOGIA.md).
 
